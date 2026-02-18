@@ -1,0 +1,46 @@
+.app {
+  min-width: 280px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.app--popup {
+  width: 100%;
+  min-height: 420px;
+  height: 100%;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.app__header {
+  padding: 1rem 1.25rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.app__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.app__body {
+  padding: 1rem 1.25rem 1.25rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (prefers-color-scheme: light) {
+  .app__header {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .app__title {
+    color: rgba(0, 0, 0, 0.9);
+  }
+}

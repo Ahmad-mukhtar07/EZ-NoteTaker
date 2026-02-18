@@ -1,0 +1,169 @@
+.connected-doc {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.connected-doc__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.25rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.connected-doc__name {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem;
+  color: rgba(255, 255, 255, 0.95);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connected-doc__btn {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+/* Unclicked: bright blue */
+.connected-doc__btn--snip {
+  background: #1a73e8;
+  color: #fff;
+  border-color: #1a73e8;
+}
+
+.connected-doc__btn--snip:hover {
+  background: #1557b0;
+  border-color: #1557b0;
+}
+
+/* Clicked (while pressing or for ~500ms after): darker navy so it’s clearly different */
+.connected-doc__btn--snip:active {
+  background: #0a3d8c;
+  border-color: #0a3d8c;
+  transform: scale(0.98);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.connected-doc__btn--snip-active,
+.connected-doc__btn--snip-active:hover {
+  background: #0a3d8c;
+  border-color: #0a3d8c;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.connected-doc__btn--snip:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
+.connected-doc__btn--snip:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.connected-doc__btn--snip:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
+}
+
+.connected-doc__btn--plug {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.connected-doc__btn--plug:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.connected-doc__btn--plug:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.connected-doc__change {
+  font-size: 0.85rem;
+  padding: 0.35rem 0;
+  background: none;
+  border: none;
+  color: #646cff;
+  cursor: pointer;
+}
+
+.connected-doc__change:hover {
+  text-decoration: underline;
+}
+
+@media (prefers-color-scheme: light) {
+  .connected-doc {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .connected-doc__label {
+    color: rgba(0, 0, 0, 0.55);
+  }
+
+  .connected-doc__name {
+    color: rgba(0, 0, 0, 0.9);
+  }
+
+  .connected-doc__btn--snip {
+    background: #1a73e8;
+    color: #fff;
+    border-color: #1a73e8;
+  }
+
+  .connected-doc__btn--snip:hover {
+    background: #1557b0;
+    border-color: #1557b0;
+  }
+
+  .connected-doc__btn--snip:active {
+    background: #0a3d8c;
+    border-color: #0a3d8c;
+  }
+
+  .connected-doc__btn--snip-active,
+  .connected-doc__btn--snip-active:hover {
+    background: #0a3d8c;
+    border-color: #0a3d8c;
+  }
+
+  .connected-doc__btn--snip:focus-visible {
+    outline: 2px solid #1a73e8;
+    outline-offset: 2px;
+  }
+
+  .connected-doc__btn--plug {
+    color: rgba(0, 0, 0, 0.85);
+    border-color: rgba(0, 0, 0, 0.25);
+  }
+
+  .connected-doc__btn--plug:hover {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.4);
+  }
+
+  .connected-doc__btn--plug:focus-visible {
+    outline: 2px solid #1a73e8;
+    outline-offset: 2px;
+  }
+
+  .connected-doc__change {
+    color: #535bf2;
+  }
+}

@@ -1,0 +1,40 @@
+.connect-google-docs {
+  margin: 0.75rem 0;
+}
+
+.connect-google-docs__btn {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: #1a73e8;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.connect-google-docs__btn:hover:not(:disabled) {
+  background: #1557b0;
+}
+
+.connect-google-docs__btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.connect-google-docs__error {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #c5221f;
+}
+
+@media (prefers-color-scheme: light) {
+  .connect-google-docs__btn {
+    background: #1a73e8;
+  }
+  .connect-google-docs__btn:hover:not(:disabled) {
+    background: #1557b0;
+  }
+}
