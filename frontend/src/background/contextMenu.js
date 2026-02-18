@@ -22,7 +22,7 @@ export function createContextMenu() {
       },
       () => {
         if (chrome.runtime.lastError) {
-          console.error('EZ-Note: context menu create failed', chrome.runtime.lastError);
+          console.error('EZ-NoteTaker: context menu create failed', chrome.runtime.lastError);
         }
       }
     );
@@ -46,7 +46,7 @@ export async function onContextMenuClick(info, tab) {
     }
     await plugHighlightIntoDoc(selection);
   } catch (err) {
-    console.error('EZ-Note: plug it in failed', err);
+    console.error('EZ-NoteTaker: plug it in failed', err);
     showNotification(
       'Could not plug in',
       err instanceof Error ? err.message : 'Something went wrong. Try again.'
@@ -70,7 +70,7 @@ export async function plugSelectionFromTab(tabId) {
     }
     await plugHighlightIntoDoc(selection);
   } catch (err) {
-    console.error('EZ-Note: plug it in failed', err);
+    console.error('EZ-NoteTaker: plug it in failed', err);
     showNotification(
       'Could not plug in',
       err instanceof Error ? err.message : 'Something went wrong. Try again.'

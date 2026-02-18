@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "EZ-Note",
+  "name": "EZ-NoteTaker",
   "version": "1.0.0",
   "description": "Connect to Google Docs for notes and highlights",
   "action": {
-    "default_title": "EZ-Note"
+    "default_title": "EZ-NoteTaker"
   },
   "side_panel": {
     "default_path": "index.html"

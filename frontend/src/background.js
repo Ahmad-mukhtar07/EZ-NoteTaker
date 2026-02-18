@@ -1,5 +1,5 @@
 /**
- * EZ-Note background service worker.
+ * EZ-NoteTaker background service worker.
  * Context menu "Plug it in", Snip and Plug messaging.
  */
 
@@ -113,7 +113,7 @@ chrome.action.onClicked.addListener(() => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs?.[0];
     if (tab?.windowId) {
-      chrome.sidePanel.open({ windowId: tab.windowId }).catch((e) => console.error('EZ-Note: open side panel failed', e));
+      chrome.sidePanel.open({ windowId: tab.windowId }).catch((e) => console.error('EZ-NoteTaker: open side panel failed', e));
     }
   });
 });
@@ -128,7 +128,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   onContextMenuClick(info, tab).catch((err) => {
-    console.error('EZ-Note: plug it in failed', err);
+    console.error('EZ-NoteTaker: plug it in failed', err);
   });
 });
 

@@ -1,4 +1,4 @@
-# EZ-Note – Google OAuth setup
+# EZ-NoteTaker – Google OAuth setup
 
 To use “Connect Google Docs” you must configure a Google OAuth 2.0 client and set its ID in the extension manifest.
 
@@ -13,7 +13,7 @@ To use “Connect Google Docs” you must configure a Google OAuth 2.0 client an
 3. **Create OAuth client ID**
    - Open **APIs & Services → Credentials → Create credentials → OAuth client ID**.
    - Application type: **Chrome app**.
-   - Name it (e.g. “EZ-Note Extension”).
+   - Name it (e.g. “EZ-NoteTaker Extension”).
    - **Application ID**: use your extension’s ID from `chrome://extensions` (e.g. `abcdefghijklmnopqrstuvwxyzabcdef`). Load the unpacked extension once to see the ID.
    - Create and copy the **Client ID** (e.g. `123456789-xxx.apps.googleusercontent.com`).
 
@@ -22,6 +22,6 @@ To use “Connect Google Docs” you must configure a Google OAuth 2.0 client an
    - Set `VITE_OAUTH_CLIENT_ID` to your full Client ID (e.g. `123456789-xxx.apps.googleusercontent.com`).
 
 5. **Rebuild and reload**
-   - Run `npm run build`, then in `chrome://extensions` click **Reload** on EZ-Note.
+   - Run `npm run build`, then in `chrome://extensions` click **Reload** on EZ-NoteTaker.
 
 After this, “Connect Google Docs” in the popup will open Google sign-in and then list your Google Docs for selection.

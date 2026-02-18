@@ -59,7 +59,7 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
   try {
     return await handleSnipBoundsInner(tabId, bounds, windowId, pageInfo);
   } catch (err) {
-    console.error('EZ-Note: Snip and Plug failed', err);
+    console.error('EZ-NoteTaker: Snip and Plug failed', err);
     const msg = err instanceof Error ? err.message : String(err);
     await notifyAndRemoveOverlay(tabId, 'Snip and Plug failed', userFriendlyInsertError(msg));
     throw err;
@@ -73,14 +73,14 @@ async function handleSnipBoundsInner(tabId, bounds, windowId = null, pageInfo = 
     const hasToken = await getStoredAccessToken();
     const docId = await getSelectedDocumentId();
     if (!hasToken) {
-      await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open EZ-Note and click "Connect Google Docs" to sign in.');
+      await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open EZ-NoteTaker and click "Connect Google Docs" to sign in.');
       return;
     }
     if (!docId) {
-      await notifyAndRemoveOverlay(tabId, 'No document selected', 'Open EZ-Note and select a Google Doc to connect.');
+      await notifyAndRemoveOverlay(tabId, 'No document selected', 'Open EZ-NoteTaker and select a Google Doc to connect.');
       return;
     }
-    await notifyAndRemoveOverlay(tabId, 'Connection problem', 'Open EZ-Note and connect Google Docs again, then try Snip and Plug.');
+    await notifyAndRemoveOverlay(tabId, 'Connection problem', 'Open EZ-NoteTaker and connect Google Docs again, then try Snip and Plug.');
     return;
   }
 
@@ -96,7 +96,7 @@ async function handleSnipBoundsInner(tabId, bounds, windowId = null, pageInfo = 
   try {
     dataUrl = await chrome.tabs.captureVisibleTab(windowId ?? undefined, { format: 'png' });
   } catch (err) {
-    console.error('EZ-Note: captureVisibleTab failed', err);
+    console.error('EZ-NoteTaker: captureVisibleTab failed', err);
     await notifyAndRemoveOverlay(tabId, 'Capture failed', err?.message || 'Could not capture the tab. Try again.');
     return;
   }
@@ -105,7 +105,7 @@ async function handleSnipBoundsInner(tabId, bounds, windowId = null, pageInfo = 
   try {
     cropResult = await chrome.tabs.sendMessage(tabId, { type: 'CROP_IMAGE', dataUrl, bounds });
   } catch (err) {
-    console.error('EZ-Note: crop message failed', err);
+    console.error('EZ-NoteTaker: crop message failed', err);
     await notifyAndRemoveOverlay(tabId, 'Snip failed', 'Could not process selection. Try again.');
     return;
   }
@@ -143,16 +143,16 @@ async function handleSnipBoundsInner(tabId, bounds, windowId = null, pageInfo = 
           imageUrl = uploadResult.imageUrl;
           token = newToken;
         } catch (retryErr) {
-          console.error('EZ-Note: Drive upload retry failed', retryErr);
+          console.error('EZ-NoteTaker: Drive upload retry failed', retryErr);
           await notifyAndRemoveOverlay(tabId, 'Upload failed', retryErr instanceof Error ? retryErr.message : 'Could not upload image. Try again.');
           return;
         }
       } else {
-        await notifyAndRemoveOverlay(tabId, 'Session expired', 'Open EZ-Note and click "Connect Google Docs" to sign in again.');
+        await notifyAndRemoveOverlay(tabId, 'Session expired', 'Open EZ-NoteTaker and click "Connect Google Docs" to sign in again.');
         return;
       }
     } else {
-      console.error('EZ-Note: Drive upload failed', err);
+      console.error('EZ-NoteTaker: Drive upload failed', err);
       await notifyAndRemoveOverlay(tabId, 'Upload failed', err instanceof Error ? err.message : 'Could not upload image. Try again.');
       return;
     }
@@ -195,7 +195,7 @@ async function handleSnipBoundsInner(tabId, bounds, windowId = null, pageInfo = 
           throw retryErr;
         }
       }
-      await notifyAndRemoveOverlay(tabId, 'Session expired', 'Open EZ-Note and sign in again.');
+      await notifyAndRemoveOverlay(tabId, 'Session expired', 'Open EZ-NoteTaker and sign in again.');
       throw err;
     }
     throw err;
@@ -213,7 +213,7 @@ export async function startSnipMode(tabId) {
       files: [SNIP_OVERLAY_PATH],
     });
   } catch (err) {
-    console.error('EZ-Note: inject snip overlay failed', err);
+    console.error('EZ-NoteTaker: inject snip overlay failed', err);
     showNotification('Snip failed', 'Could not start snipping on this page. Try a different tab or reload.');
   }
 }

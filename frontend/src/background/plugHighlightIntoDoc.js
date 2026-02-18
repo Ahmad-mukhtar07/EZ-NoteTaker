@@ -56,14 +56,14 @@ export async function plugHighlightIntoDoc(data) {
       const hasToken = await getStoredAccessToken();
       const docId = await getSelectedDocumentId();
       if (!hasToken) {
-        showNotification('Sign in required', 'Open the EZ-Note extension and click "Connect Google Docs" to sign in.');
+        showNotification('Sign in required', 'Open the EZ-NoteTaker extension and click "Connect Google Docs" to sign in.');
         return;
       }
       if (!docId) {
-        showNotification('No document selected', 'Open the EZ-Note extension and select a Google Doc to connect.');
+        showNotification('No document selected', 'Open the EZ-NoteTaker extension and select a Google Doc to connect.');
         return;
       }
-      showNotification('Connection problem', 'Open the EZ-Note extension and connect Google Docs again, then try "Plug it in" again.');
+      showNotification('Connection problem', 'Open the EZ-NoteTaker extension and connect Google Docs again, then try "Plug it in" again.');
       return;
     }
 
@@ -92,7 +92,7 @@ export async function plugHighlightIntoDoc(data) {
       showNotification('Could not plug in', friendlyPlugError(err));
     }
   } catch (err) {
-    console.error('EZ-Note: plug it in failed', err);
+    console.error('EZ-NoteTaker: plug it in failed', err);
     showNotification('Could not plug in', friendlyPlugError(err));
   }
 }

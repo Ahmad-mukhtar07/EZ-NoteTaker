@@ -45,7 +45,7 @@ export function ConnectedDocument({ documentName, onChangeDocument }) {
       if (!tab?.id) return;
       chrome.runtime.sendMessage({ type: 'START_SNIP', tabId: tab.id }, () => {
         if (chrome.runtime.lastError) {
-          console.error('EZ-Note: START_SNIP failed', chrome.runtime.lastError);
+          console.error('EZ-NoteTaker: START_SNIP failed', chrome.runtime.lastError);
         }
       });
     });
@@ -58,7 +58,7 @@ export function ConnectedDocument({ documentName, onChangeDocument }) {
       if (!tab?.id) return;
       chrome.runtime.sendMessage({ type: 'PLUG_IT_IN', tabId: tab.id }, () => {
         if (chrome.runtime.lastError) {
-          console.error('EZ-Note: PLUG_IT_IN failed', chrome.runtime.lastError);
+          console.error('EZ-NoteTaker: PLUG_IT_IN failed', chrome.runtime.lastError);
         }
       });
     });

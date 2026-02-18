@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAuthTokenSilent } from './lib/auth.js';
+import { getAuthToken, getAuthTokenSilent } from './lib/auth.js';
 import { getSelectedDocumentId, getSelectedDocumentName } from './lib/storage.js';
 import { ConnectGoogleDocsButton } from './components/ConnectGoogleDocsButton';
 import { DocsList } from './components/DocsList';
@@ -13,17 +13,23 @@ function App() {
   const [showDocList, setShowDocList] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
-  // Load persisted selected document on mount
+  // Load persisted selected document and token on mount (token needed for "Change document")
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
-        const [id, name] = await Promise.all([
+        const [id, name, silentToken] = await Promise.all([
           getSelectedDocumentId(),
           getSelectedDocumentName(),
+          getAuthTokenSilent(),
         ]);
         if (!cancelled && id) setSelectedDoc({ id, name: name || 'Untitled' });
+        if (!cancelled && silentToken) {
+          setToken(silentToken);
+          // If we have a token but no saved doc, show doc list so user can pick one
+          if (!id) setShowDocList(true);
+        }
       } catch (_) {
         // ignore
       } finally {
@@ -46,9 +52,18 @@ function App() {
   };
 
   const handleChangeDocument = async () => {
-    const silentToken = await getAuthTokenSilent();
-    if (silentToken) {
-      setToken(silentToken);
+    let t = await getAuthTokenSilent();
+    if (!t) {
+      try {
+        t = await getAuthToken();
+      } catch (_) {
+        setToken(null);
+        setShowDocList(false);
+        return;
+      }
+    }
+    if (t) {
+      setToken(t);
       setShowDocList(true);
     } else {
       setToken(null);
@@ -60,7 +75,7 @@ function App() {
     return (
       <div className="app app--popup">
         <header className="app__header">
-          <h1 className="app__title">EZ-Note</h1>
+          <h1 className="app__title">EZ-NoteTaker</h1>
         </header>
         <div className="app__body">Loading…</div>
       </div>
@@ -73,7 +88,7 @@ function App() {
   return (
     <div className="app app--popup">
       <header className="app__header">
-        <h1 className="app__title">EZ-Note</h1>
+        <h1 className="app__title">EZ-NoteTaker</h1>
       </header>
       <main className="app__body">
         {hasSelectedDoc && (
