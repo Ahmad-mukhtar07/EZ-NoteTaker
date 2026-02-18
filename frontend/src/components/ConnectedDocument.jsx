@@ -86,6 +86,15 @@ export function ConnectedDocument({ documentName, onChangeDocument }) {
       </button>
       <button
         type="button"
+        className="connected-doc__btn connected-doc__btn--magic"
+        disabled
+        title="Clean and structure your notes with AI—coming in a future update"
+      >
+        Magic AI Format <span className="connected-doc__coming-soon">(Coming soon)</span>
+      </button>
+      <p className="connected-doc__hint connected-doc__hint--magic">AI-powered cleanup and structure for your doc. Coming soon.</p>
+      <button
+        type="button"
         className="connected-doc__change"
         onClick={onChangeDocument}
       >
