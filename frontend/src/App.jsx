@@ -126,7 +126,7 @@ function App() {
               documentName={selectedDoc.name}
               onChangeDocument={handleChangeDocument}
             />
-            <DocPreview />
+            <DocPreview documentId={selectedDoc?.id} />
           </>
         )}
 

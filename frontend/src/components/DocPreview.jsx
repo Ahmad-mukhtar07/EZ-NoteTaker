@@ -89,7 +89,9 @@ function PreviewBlocks({ blocks, replaceImagesWithPlaceholder }) {
 
 const AUTO_REFRESH_MS = 4000;
 
-export function DocPreview() {
+const DOCS_EDIT_URL = (id) => `https://docs.google.com/document/d/${id}/edit`;
+
+export function DocPreview({ documentId }) {
   const [previewMode, setPreviewMode] = useState(null); // null | 'full' | 'noImages'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -159,6 +161,17 @@ export function DocPreview() {
     fetchPreview();
   };
 
+  const handleOpenDoc = () => {
+    if (documentId) {
+      const url = DOCS_EDIT_URL(documentId);
+      if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+        chrome.tabs.create({ url });
+      } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    }
+  };
+
   return (
     <div className="doc-preview">
       <p className="doc-preview__section-label">Preview</p>
@@ -195,6 +208,11 @@ export function DocPreview() {
           {preview && !loading && (
             <>
               <div className="doc-preview__toolbar">
+                {documentId && (
+                  <button type="button" className="doc-preview__open-doc" onClick={handleOpenDoc} title="Open in Google Docs">
+                    Open doc
+                  </button>
+                )}
                 {!isNoImagesMode ? (
                   <button type="button" className="doc-preview__refresh" onClick={handleRefresh}>
                     Refresh
