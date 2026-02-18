@@ -6,6 +6,7 @@
 const STORAGE_KEYS = {
   SELECTED_DOCUMENT_ID: 'eznote_selected_document_id',
   SELECTED_DOCUMENT_NAME: 'eznote_selected_document_name',
+  RESEARCH_SNIPS_FOLDER_ID: 'eznote_research_snips_folder_id',
 };
 
 /**
@@ -59,4 +60,25 @@ export function clearSelectedDocument() {
   const storage = getStorage();
   if (!storage) return Promise.resolve();
   return storage.remove([STORAGE_KEYS.SELECTED_DOCUMENT_ID, STORAGE_KEYS.SELECTED_DOCUMENT_NAME]);
+}
+
+/**
+ * Get the stored Research Snips folder ID (if any).
+ * @returns {Promise<string|null>}
+ */
+export function getResearchSnipsFolderId() {
+  const storage = getStorage();
+  if (!storage) return Promise.resolve(null);
+  return storage.get(STORAGE_KEYS.RESEARCH_SNIPS_FOLDER_ID).then((d) => d[STORAGE_KEYS.RESEARCH_SNIPS_FOLDER_ID] || null);
+}
+
+/**
+ * Store the Research Snips folder ID.
+ * @param {string} folderId
+ * @returns {Promise<void>}
+ */
+export function setResearchSnipsFolderId(folderId) {
+  const storage = getStorage();
+  if (!storage) return Promise.resolve();
+  return storage.set({ [STORAGE_KEYS.RESEARCH_SNIPS_FOLDER_ID]: folderId });
 }

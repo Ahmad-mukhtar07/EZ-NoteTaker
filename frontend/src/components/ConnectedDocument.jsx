@@ -6,7 +6,7 @@ import './ConnectedDocument.css';
  * Snip button stays "clicked" while overlay is active and restores that state when popup reopens.
  * Unclicked only after: press button again, complete a snip, or reload the page.
  */
-export function ConnectedDocument({ documentName, onChangeDocument }) {
+export function ConnectedDocument({ documentName, onChangeDocument, disabled = false }) {
   const [snipActive, setSnipActive] = useState(false);
   const snipActiveTimer = useRef(null);
 
@@ -74,6 +74,7 @@ export function ConnectedDocument({ documentName, onChangeDocument }) {
         type="button"
         className="connected-doc__btn connected-doc__btn--plug"
         onClick={handlePlugItIn}
+        disabled={disabled}
       >
         Plug it in
       </button>
@@ -81,6 +82,7 @@ export function ConnectedDocument({ documentName, onChangeDocument }) {
         type="button"
         className={snipClass}
         onClick={handleSnip}
+        disabled={disabled}
       >
         Snip and Plug
       </button>
@@ -97,6 +99,7 @@ export function ConnectedDocument({ documentName, onChangeDocument }) {
         type="button"
         className="connected-doc__change"
         onClick={onChangeDocument}
+        disabled={disabled}
       >
         Change document
       </button>

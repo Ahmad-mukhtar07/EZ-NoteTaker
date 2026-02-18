@@ -1,25 +1,29 @@
 import { useState, useEffect } from 'react';
-import { fetchDocsList } from '../lib/googleApi.js';
-import { setSelectedDocument } from '../lib/storage.js';
+import { getDocsList, setSelectedDoc } from '../popup/messages.js';
 import './DocsList.css';
 
 /**
- * Fetches and displays the user's Google Docs. On select, stores documentId and name.
+ * Fetches docs list via background (DOCS_LIST) and stores selection via DOCS_SET_SELECTED. No direct API.
  */
-export function DocsList({ accessToken, onSelectDocument, onError }) {
+export function DocsList({ onSelectDocument, onError, disabled = false }) {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-
-    async function load() {
+    (async () => {
       setLoading(true);
       setError(null);
       try {
-        const list = await fetchDocsList(accessToken);
-        if (!cancelled) setDocs(list);
+        const res = await getDocsList();
+        if (cancelled) return;
+        if (res?.success && Array.isArray(res.docs)) {
+          setDocs(res.docs);
+        } else {
+          setError(res?.error || 'Failed to load documents');
+          onError?.();
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load documents';
         if (!cancelled) setError(message);
@@ -27,16 +31,18 @@ export function DocsList({ accessToken, onSelectDocument, onError }) {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
-
-    if (accessToken) load();
+    })();
     return () => { cancelled = true; };
-  }, [accessToken, onError]);
+  }, [onError]);
 
   const handleSelect = async (doc) => {
     try {
-      await setSelectedDocument(doc.id, doc.name);
-      onSelectDocument?.(doc);
+      const res = await setSelectedDoc(doc.id, doc.name);
+      if (res?.success) {
+        onSelectDocument?.(doc);
+      } else {
+        setError(res?.error || 'Failed to save selection');
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save selection';
       setError(message);
@@ -74,6 +80,7 @@ export function DocsList({ accessToken, onSelectDocument, onError }) {
               className="docs-list__item-btn"
               onClick={() => handleSelect(doc)}
               role="option"
+              disabled={disabled}
             >
               <span className="docs-list__item-name">{doc.name}</span>
             </button>

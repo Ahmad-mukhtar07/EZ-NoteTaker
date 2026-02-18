@@ -25,13 +25,49 @@
   gap: 0.75rem;
 }
 
+.app__header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
 .app__title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.95);
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app__status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.app__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.app__status-dot--on {
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
+}
+
+.app__status-dot--off {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .app__logout {
@@ -56,6 +92,11 @@
   outline-offset: 2px;
 }
 
+.app__logout:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .app__body {
   padding: 1rem 1.25rem 1.25rem;
   flex: 1 1 auto;
@@ -70,6 +111,14 @@
 
   .app__title {
     color: rgba(0, 0, 0, 0.9);
+  }
+
+  .app__status {
+    color: rgba(0, 0, 0, 0.55);
+  }
+
+  .app__status-dot--off {
+    background: rgba(0, 0, 0, 0.3);
   }
 
   .app__logout {

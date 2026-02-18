@@ -1,94 +1,99 @@
-import { useState, useEffect } from 'react';
-import { getAuthToken, getAuthTokenSilent, removeCachedAuthToken, clearAllCachedAuthTokens, clearStoredAccessToken } from './lib/auth.js';
-import { getSelectedDocumentId, getSelectedDocumentName, clearSelectedDocument } from './lib/storage.js';
+import { useState, useEffect, useCallback } from 'react';
+import { getAuthStatus, authConnect, authDisconnect, getDocsList, setSelectedDoc } from './popup/messages.js';
 import { ConnectGoogleDocsButton } from './components/ConnectGoogleDocsButton';
 import { DocsList } from './components/DocsList';
 import { ConnectedDocument } from './components/ConnectedDocument';
 import { DocPreview } from './components/DocPreview';
 import './App.css';
 
+const STATUS = {
+  NOT_CONNECTED: 'not_connected',
+  CONNECTED: 'connected',
+  DOCUMENT_SELECTED: 'document_selected',
+};
+
 function App() {
-  const [token, setToken] = useState(null);
-  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [status, setStatus] = useState(STATUS.NOT_CONNECTED);
+  const [documentId, setDocumentId] = useState(null);
+  const [documentName, setDocumentName] = useState(null);
   const [showDocList, setShowDocList] = useState(false);
   const [initializing, setInitializing] = useState(true);
+  const [apiLoading, setApiLoading] = useState(false);
 
-  // Load persisted selected document and token on mount (token needed for "Change document")
+  const refreshStatus = useCallback(async () => {
+    try {
+      const res = await getAuthStatus();
+      const connected = !!res?.connected;
+      const docId = res?.documentId ?? null;
+      const docName = res?.documentName ?? null;
+      setDocumentId(docId);
+      setDocumentName(docName);
+      if (connected && docId) setStatus(STATUS.DOCUMENT_SELECTED);
+      else if (connected) setStatus(STATUS.CONNECTED);
+      else setStatus(STATUS.NOT_CONNECTED);
+      if (connected && !docId) setShowDocList(true);
+      else setShowDocList(false);
+    } catch (_) {
+      setStatus(STATUS.NOT_CONNECTED);
+      setDocumentId(null);
+      setDocumentName(null);
+      setShowDocList(false);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-
-    async function load() {
+    (async () => {
       try {
-        const [id, name, silentToken] = await Promise.all([
-          getSelectedDocumentId(),
-          getSelectedDocumentName(),
-          getAuthTokenSilent(),
-        ]);
-        if (!cancelled && id) setSelectedDoc({ id, name: name || 'Untitled' });
-        if (!cancelled && silentToken) {
-          setToken(silentToken);
-          // If we have a token but no saved doc, show doc list so user can pick one
-          if (!id) setShowDocList(true);
-        }
+        const res = await getAuthStatus();
+        if (cancelled) return;
+        const connected = !!res?.connected;
+        const docId = res?.documentId ?? null;
+        const docName = res?.documentName ?? null;
+        setDocumentId(docId);
+        setDocumentName(docName);
+        if (connected && docId) setStatus(STATUS.DOCUMENT_SELECTED);
+        else if (connected) setStatus(STATUS.CONNECTED);
+        else setStatus(STATUS.NOT_CONNECTED);
+        if (connected && !docId) setShowDocList(true);
       } catch (_) {
-        // ignore
+        if (!cancelled) setStatus(STATUS.NOT_CONNECTED);
       } finally {
         if (!cancelled) setInitializing(false);
       }
-    }
-
-    load();
+    })();
     return () => { cancelled = true; };
   }, []);
 
-  const handleConnectSuccess = (accessToken) => {
-    setToken(accessToken);
+  const handleConnectSuccess = () => {
+    setStatus(STATUS.CONNECTED);
     setShowDocList(true);
   };
 
   const handleDocumentSelected = (doc) => {
-    setSelectedDoc(doc);
+    setDocumentId(doc.id);
+    setDocumentName(doc.name || 'Untitled');
+    setStatus(STATUS.DOCUMENT_SELECTED);
     setShowDocList(false);
   };
 
-  const handleLogout = async () => {
-    if (token) {
-      try {
-        await removeCachedAuthToken(token);
-      } catch (_) {
-        // ignore
-      }
-      try {
-        await clearAllCachedAuthTokens();
-      } catch (_) {
-        // ignore (e.g. Chrome < 87)
-      }
-      await clearStoredAccessToken();
-    }
-    await clearSelectedDocument();
-    setToken(null);
-    setSelectedDoc(null);
-    setShowDocList(false);
-  };
-
-  const handleChangeDocument = async () => {
-    let t = await getAuthTokenSilent();
-    if (!t) {
-      try {
-        t = await getAuthToken();
-      } catch (_) {
-        setToken(null);
-        setShowDocList(false);
-        return;
-      }
-    }
-    if (t) {
-      setToken(t);
-      setShowDocList(true);
-    } else {
-      setToken(null);
+  const handleDisconnect = async () => {
+    setApiLoading(true);
+    try {
+      await authDisconnect();
+      setStatus(STATUS.NOT_CONNECTED);
+      setDocumentId(null);
+      setDocumentName(null);
       setShowDocList(false);
+    } catch (_) {
+      await refreshStatus();
+    } finally {
+      setApiLoading(false);
     }
+  };
+
+  const handleChangeDocument = () => {
+    setShowDocList(true);
   };
 
   if (initializing) {
@@ -102,20 +107,34 @@ function App() {
     );
   }
 
-  const isConnected = Boolean(token);
-  const hasSelectedDoc = Boolean(selectedDoc && !showDocList);
+  const hasSelectedDoc = status === STATUS.DOCUMENT_SELECTED && !showDocList;
+  const isConnected = status !== STATUS.NOT_CONNECTED;
+  const statusLabel =
+    status === STATUS.DOCUMENT_SELECTED
+      ? 'Document Selected'
+      : status === STATUS.CONNECTED
+        ? 'Connected'
+        : 'Not Connected';
 
   return (
     <div className="app app--popup">
       <header className="app__header">
-        <h1 className="app__title">EZ-NoteTaker</h1>
+        <div className="app__header-left">
+          <h1 className="app__title">EZ-NoteTaker</h1>
+          <span className="app__status" role="status" aria-live="polite">
+            <span className={`app__status-dot app__status-dot--${status === STATUS.NOT_CONNECTED ? 'off' : 'on'}`} />
+            {statusLabel}
+          </span>
+        </div>
         {isConnected && (
           <button
             type="button"
             className="app__logout"
-            onClick={handleLogout}
+            onClick={handleDisconnect}
+            disabled={apiLoading}
+            aria-busy={apiLoading}
           >
-            Sign out
+            Disconnect
           </button>
         )}
       </header>
@@ -123,22 +142,23 @@ function App() {
         {hasSelectedDoc && (
           <>
             <ConnectedDocument
-              documentName={selectedDoc.name}
+              documentName={documentName || 'Untitled'}
               onChangeDocument={handleChangeDocument}
+              disabled={apiLoading}
             />
-            <DocPreview documentId={selectedDoc?.id} />
+            <DocPreview documentId={documentId} />
           </>
         )}
 
-        {!hasSelectedDoc && !isConnected && (
-          <ConnectGoogleDocsButton onSuccess={handleConnectSuccess} />
+        {status === STATUS.NOT_CONNECTED && (
+          <ConnectGoogleDocsButton onSuccess={handleConnectSuccess} disabled={apiLoading} />
         )}
 
         {isConnected && showDocList && (
           <DocsList
-            accessToken={token}
             onSelectDocument={handleDocumentSelected}
-            onError={() => setToken(null)}
+            onError={() => setStatus(STATUS.NOT_CONNECTED)}
+            disabled={apiLoading}
           />
         )}
       </main>

@@ -1,10 +1,12 @@
 /**
  * Snip overlay: transparent selection layer, draw rect, send bounds, crop image on request.
  * Injected via chrome.scripting; communicates with background via chrome.runtime messages.
+ * No Google API calls; all API work is done in the background.
  */
 (function () {
   'use strict';
 
+  var LOG_PREFIX = '[EZ-Note Content]';
   var OVERLAY_ID = 'eznote-snip-overlay';
 
   // If overlay already exists (e.g. user clicked "Snip and Plug" again), remove it and exit.
@@ -209,6 +211,9 @@
           sendResponse({ type: 'CROPPED_IMAGE', ...result });
         })
         .catch(function (err) {
+          if (typeof console !== 'undefined' && console.error) {
+            console.error(LOG_PREFIX, 'CROP_IMAGE failed', err);
+          }
           sendResponse({ type: 'SNIP_ERROR', error: err.message });
         });
       return true;

@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import { authConnect } from '../popup/messages.js';
 import './ConnectGoogleDocsButton.css';
 
 /**
- * Primary CTA to start Google sign-in and connect to Docs.
- * Shows loading and error state.
+ * Primary CTA to connect Google Docs via background (AUTH_CONNECT). No direct auth/API calls.
  */
 export function ConnectGoogleDocsButton({ onSuccess, disabled = false }) {
   const [loading, setLoading] = useState(false);
@@ -13,14 +13,15 @@ export function ConnectGoogleDocsButton({ onSuccess, disabled = false }) {
     setError(null);
     setLoading(true);
     try {
-      const { getAuthToken, storeAccessToken, AuthError } = await import('../lib/auth.js');
-      const token = await getAuthToken();
-      await storeAccessToken(token);
-      onSuccess?.(token);
+      const res = await authConnect();
+      if (res?.success) {
+        onSuccess?.();
+      } else {
+        setError(res?.error || 'Something went wrong');
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong';
-      const isUserCancel = err?.name === 'AuthError' && err?.isUserCancel;
-      setError(isUserCancel ? 'Sign-in was cancelled.' : message);
+      setError(message);
     } finally {
       setLoading(false);
     }
