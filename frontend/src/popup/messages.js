@@ -44,3 +44,12 @@ export async function getDocsList() {
 export async function setSelectedDoc(documentId, documentName = '') {
   return sendMessage({ type: 'DOCS_SET_SELECTED', documentId, documentName });
 }
+
+/**
+ * Create a new Google Doc and set it as the selected document.
+ * @param {string} [name] - Document title (default "Untitled")
+ * @returns {Promise<{ success: boolean, doc?: { id: string, name: string }, error?: string }>}
+ */
+export async function createDoc(name = 'Untitled') {
+  return sendMessage({ type: 'DOCS_CREATE', name: name || 'Untitled' });
+}

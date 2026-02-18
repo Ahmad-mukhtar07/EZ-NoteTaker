@@ -9,6 +9,7 @@ import { log } from './logger.js';
 const FILES_URL = 'https://www.googleapis.com/drive/v3/files';
 const UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webContentLink,webViewLink';
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
+const DOC_MIME = 'application/vnd.google-apps.document';
 const RESEARCH_SNIPS_NAME = 'Research Snips';
 
 /**
@@ -142,4 +143,38 @@ export async function uploadImageToDrive(accessToken, imageBlob, filename = 'ezn
   }
   if (!imageUrl) imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
   return { fileId, imageUrl };
+}
+
+/**
+ * Create a new Google Doc in the user's Drive.
+ * @param {string} accessToken
+ * @param {string} [name] - Document title (default "Untitled")
+ * @returns {Promise<{ id: string, name: string }>}
+ */
+export async function createNewDoc(accessToken, name = 'Untitled') {
+  const res = await fetch(FILES_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: name.trim() || 'Untitled',
+      mimeType: DOC_MIME,
+    }),
+  });
+  if (res.status === 401) throw new Error('SESSION_EXPIRED');
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = `Drive create doc error: ${res.status}`;
+    try {
+      const j = JSON.parse(text);
+      if (j.error?.message) msg = j.error.message;
+    } catch (_) {}
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  const id = data.id;
+  if (!id) throw new Error('No document ID returned from Drive');
+  return { id, name: data.name || name || 'Untitled' };
 }

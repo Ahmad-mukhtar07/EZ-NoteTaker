@@ -6,6 +6,7 @@
 import { getValidToken, getTokenInteractive, withTokenRetry, disconnect } from './auth.js';
 import { getSelectedDocumentId, getSelectedDocumentName, setSelectedDocument } from '../lib/storage.js';
 import { fetchDocsList, fetchDocPreview, resolveBlockImageUrls } from './googleDocs.js';
+import { createNewDoc } from './googleDrive.js';
 import { log } from './logger.js';
 
 /**
@@ -73,6 +74,21 @@ export async function handleMessage(msg, sender) {
     }
     await setSelectedDocument(documentId, documentName || '');
     return { sendResponse: true, response: { success: true } };
+  }
+
+  if (type === 'DOCS_CREATE') {
+    const name = typeof msg.name === 'string' ? msg.name.trim() : 'Untitled';
+    try {
+      const doc = await withTokenRetry((token) => createNewDoc(token, name || 'Untitled'));
+      await setSelectedDocument(doc.id, doc.name);
+      return { sendResponse: true, response: { success: true, doc: { id: doc.id, name: doc.name } } };
+    } catch (err) {
+      log.bg.warn('DOCS_CREATE failed', err);
+      return {
+        sendResponse: true,
+        response: { success: false, error: err instanceof Error ? err.message : String(err) },
+      };
+    }
   }
 
   // --- Doc preview (async broadcast; no sendResponse) ---
