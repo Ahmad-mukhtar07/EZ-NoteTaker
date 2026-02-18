@@ -161,22 +161,24 @@ export function DocPreview() {
 
   return (
     <div className="doc-preview">
-      <div className="doc-preview__toggles">
+      <p className="doc-preview__section-label">Preview</p>
+      <div className="doc-preview__toggles" role="group" aria-label="Preview mode">
         <button
           type="button"
           className={`doc-preview__toggle ${previewMode === 'full' ? 'doc-preview__toggle--active' : ''}`}
           onClick={handlePreviewFull}
           aria-pressed={previewMode === 'full'}
         >
-          {previewMode === 'full' ? 'Hide preview' : 'Preview document'}
+          Full
         </button>
+        <span className="doc-preview__toggle-divider" aria-hidden="true" />
         <button
           type="button"
           className={`doc-preview__toggle ${previewMode === 'noImages' ? 'doc-preview__toggle--active' : ''}`}
           onClick={handlePreviewNoImages}
           aria-pressed={previewMode === 'noImages'}
         >
-          {previewMode === 'noImages' ? 'Hide preview' : 'Preview without Images'}
+          Text only
         </button>
       </div>
       {showPreview && (
@@ -193,16 +195,15 @@ export function DocPreview() {
           {preview && !loading && (
             <>
               <div className="doc-preview__toolbar">
-                {!isNoImagesMode && (
+                {!isNoImagesMode ? (
                   <button type="button" className="doc-preview__refresh" onClick={handleRefresh}>
                     Refresh
                   </button>
-                )}
-                {isNoImagesMode && (
-                  <span className="doc-preview__auto-refresh">Auto-refreshing every {AUTO_REFRESH_MS / 1000}s</span>
+                ) : (
+                  <span className="doc-preview__auto-refresh">Auto-refresh {AUTO_REFRESH_MS / 1000}s</span>
                 )}
                 <button type="button" className="doc-preview__hide" onClick={handleHidePreview}>
-                  Hide preview
+                  Close
                 </button>
               </div>
               <div className="doc-preview__content">
