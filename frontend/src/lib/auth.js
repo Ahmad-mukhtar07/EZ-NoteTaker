@@ -73,6 +73,19 @@ export function removeCachedAuthToken(token) {
 }
 
 /**
+ * Clear all cached OAuth tokens and account preferences for this extension.
+ * After this, the next getAuthToken(interactive: true) will show the account picker.
+ * Chrome 87+.
+ * @returns {Promise<void>}
+ */
+export function clearAllCachedAuthTokens() {
+  if (!IDENTITY || !IDENTITY.clearAllCachedAuthTokens) {
+    return Promise.resolve();
+  }
+  return IDENTITY.clearAllCachedAuthTokens();
+}
+
+/**
  * Store access token in chrome.storage for use by the extension.
  * Call after successful getAuthToken if you want to persist for the session.
  */

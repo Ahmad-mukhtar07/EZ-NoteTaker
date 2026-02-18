@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getAuthToken, getAuthTokenSilent } from './lib/auth.js';
-import { getSelectedDocumentId, getSelectedDocumentName } from './lib/storage.js';
+import { getAuthToken, getAuthTokenSilent, removeCachedAuthToken, clearAllCachedAuthTokens, clearStoredAccessToken } from './lib/auth.js';
+import { getSelectedDocumentId, getSelectedDocumentName, clearSelectedDocument } from './lib/storage.js';
 import { ConnectGoogleDocsButton } from './components/ConnectGoogleDocsButton';
 import { DocsList } from './components/DocsList';
 import { ConnectedDocument } from './components/ConnectedDocument';
@@ -51,6 +51,26 @@ function App() {
     setShowDocList(false);
   };
 
+  const handleLogout = async () => {
+    if (token) {
+      try {
+        await removeCachedAuthToken(token);
+      } catch (_) {
+        // ignore
+      }
+      try {
+        await clearAllCachedAuthTokens();
+      } catch (_) {
+        // ignore (e.g. Chrome < 87)
+      }
+      await clearStoredAccessToken();
+    }
+    await clearSelectedDocument();
+    setToken(null);
+    setSelectedDoc(null);
+    setShowDocList(false);
+  };
+
   const handleChangeDocument = async () => {
     let t = await getAuthTokenSilent();
     if (!t) {
@@ -89,6 +109,15 @@ function App() {
     <div className="app app--popup">
       <header className="app__header">
         <h1 className="app__title">EZ-NoteTaker</h1>
+        {isConnected && (
+          <button
+            type="button"
+            className="app__logout"
+            onClick={handleLogout}
+          >
+            Sign out
+          </button>
+        )}
       </header>
       <main className="app__body">
         {hasSelectedDoc && (
