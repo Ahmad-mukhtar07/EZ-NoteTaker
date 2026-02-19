@@ -4,7 +4,7 @@
  */
 
 import { createContextMenu, onContextMenuClick, plugSelectionFromTab } from './background/contextMenu.js';
-import { startSnipMode, handleSnipBounds } from './background/snipFlow.js';
+import { startSnipMode, handleSnipBounds, setSnipInsertIndex, clearSnipInsertIndex } from './background/snipFlow.js';
 import { handleMessage } from './background/messageHub.js';
 import { log } from './background/logger.js';
 
@@ -77,11 +77,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'START_SNIP') {
     const tabId = msg.tabId ?? sender.tab?.id;
     if (tabId) {
+      clearSnipInsertIndex();
       startSnipMode(tabId)
         .then(() => sendResponse({ ok: true }), (err) => sendResponse({ error: String(err) }));
     } else {
       sendResponse({ error: 'No tab' });
     }
+    return true;
+  }
+  if (msg.type === 'SNIP_START_WITH_SECTION') {
+    const tabId = msg.tabId ?? sender.tab?.id;
+    const insertIndex = msg.insertIndex;
+    if (!tabId || typeof insertIndex !== 'number') {
+      sendResponse({ ok: false, error: 'Missing tab or insertIndex' });
+      return true;
+    }
+    setSnipInsertIndex(insertIndex)
+      .then(() => startSnipMode(tabId))
+      .then(() => sendResponse({ ok: true }), (err) => sendResponse({ error: String(err) }));
     return true;
   }
   if (msg.type === 'SNIP_OVERLAY_CREATED') {
@@ -105,6 +118,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === 'SNIP_CANCEL') {
     setSnipOverlayActive(false);
+    clearSnipInsertIndex();
     sendResponse({ ok: true });
     return true;
   }

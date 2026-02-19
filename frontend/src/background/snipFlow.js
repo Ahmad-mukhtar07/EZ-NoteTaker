@@ -6,11 +6,31 @@
 import { getSelectedDocumentId } from '../lib/storage.js';
 import { withTokenRetry } from './auth.js';
 import { ensureResearchSnipsFolder, uploadImageToDrive } from './googleDrive.js';
-import { insertImageWithSource } from './googleDocs.js';
+import { insertImageWithSource, insertImageWithSourceAtPosition } from './googleDocs.js';
 import { showNotification } from './notifications.js';
 import { tryPasteImageAtCursorInDocTab } from './pasteAtCursor.js';
 
 const SNIP_OVERLAY_PATH = 'snipOverlay.js';
+const SNIP_INSERT_INDEX_KEY = 'eznote_snip_insert_index';
+const SNIP_INSERT_SUCCESS_KEY = 'eznote_snip_insert_success';
+const sessionStorage = chrome.storage?.session || chrome.storage?.local;
+
+export async function getSnipInsertIndex() {
+  if (!sessionStorage) return null;
+  const o = await sessionStorage.get(SNIP_INSERT_INDEX_KEY);
+  const v = o[SNIP_INSERT_INDEX_KEY];
+  return typeof v === 'number' ? v : null;
+}
+
+export function setSnipInsertIndex(index) {
+  if (!sessionStorage) return Promise.resolve();
+  return sessionStorage.set({ [SNIP_INSERT_INDEX_KEY]: index });
+}
+
+export function clearSnipInsertIndex() {
+  if (!sessionStorage) return Promise.resolve();
+  return sessionStorage.remove(SNIP_INSERT_INDEX_KEY);
+}
 
 async function notifyAndRemoveOverlay(tabId, title, message) {
   showNotification(title, message);
@@ -75,16 +95,20 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
   const timestamp = new Date().toISOString();
   const sourceText = '\nSource: ' + pageTitle + ' ' + timestamp;
 
-  const pastedAtCursor = await tryPasteImageAtCursorInDocTab(
+  const insertIndex = await getSnipInsertIndex();
+  await clearSnipInsertIndex();
+
+  const pastedAtCursor = !insertIndex && (await tryPasteImageAtCursorInDocTab(
     documentId,
     tabId,
     cropResult.base64,
     sourceText
-  );
+  ));
   if (pastedAtCursor) {
     try {
       await chrome.tabs.sendMessage(tabId, { type: 'REMOVE_SNIP_OVERLAY' });
     } catch (_) {}
+    if (sessionStorage) await sessionStorage.set({ [SNIP_INSERT_SUCCESS_KEY]: true });
     showNotification('Snip and Plug', 'Screenshot added at cursor in your open doc.');
     return;
   }
@@ -97,19 +121,25 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
   const wPt = Math.max(1, Math.round(widthPt * scale * 0.75));
   const hPt = Math.max(1, Math.round(heightPt * scale * 0.75));
 
+  const imageData = {
+    imageWidthPt: wPt,
+    imageHeightPt: hPt,
+    pageUrl,
+    pageTitle,
+    timestamp,
+  };
+
   try {
     await withTokenRetry(async (token) => {
       const folderId = await ensureResearchSnipsFolder(token);
       const { imageUrl } = await uploadImageToDrive(token, blob, filename, folderId);
-      await insertImageWithSource(documentId, token, {
-        imageUrl,
-        imageWidthPt: wPt,
-        imageHeightPt: hPt,
-        pageUrl,
-        pageTitle,
-        timestamp,
-      });
+      if (typeof insertIndex === 'number') {
+        await insertImageWithSourceAtPosition(documentId, token, { ...imageData, imageUrl }, insertIndex);
+      } else {
+        await insertImageWithSource(documentId, token, { ...imageData, imageUrl });
+      }
     });
+    if (sessionStorage) await sessionStorage.set({ [SNIP_INSERT_SUCCESS_KEY]: true });
     showNotification('Snip and Plug', 'Screenshot was added to your Google Doc.');
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

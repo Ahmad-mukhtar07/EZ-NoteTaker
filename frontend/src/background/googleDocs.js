@@ -8,6 +8,7 @@ import {
   insertHighlightToDoc as insertHighlightLib,
   insertHighlightAtPosition as insertHighlightAtPositionLib,
   insertImageWithSource as insertImageLib,
+  insertImageWithSourceAtPosition as insertImageWithSourceAtPositionLib,
   getDocumentSections as getDocumentSectionsLib,
 } from '../lib/docsInsert.js';
 
@@ -83,5 +84,6 @@ export const fetchDocPreview = fetchDocPreviewLib;
 export const insertHighlightToDoc = insertHighlightLib;
 export const insertHighlightAtPosition = insertHighlightAtPositionLib;
 export const insertImageWithSource = insertImageLib;
+export const insertImageWithSourceAtPosition = insertImageWithSourceAtPositionLib;
 export const getDocumentSections = getDocumentSectionsLib;
 export const fetchDocsList = fetchDocsListLib;

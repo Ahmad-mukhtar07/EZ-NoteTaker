@@ -511,3 +511,92 @@ export async function insertImageWithSource(documentId, accessToken, data) {
     throw new Error(message);
   }
 }
+
+/**
+ * Insert an inline image and source caption at a specific index (for section placement).
+ * @param {string} documentId
+ * @param {string} accessToken
+ * @param {{ imageUrl: string, imageWidthPt: number, imageHeightPt: number, pageUrl: string, pageTitle: string, timestamp: string }} data
+ * @param {number} insertIndex
+ */
+export async function insertImageWithSourceAtPosition(documentId, accessToken, data, insertIndex) {
+  const { imageUrl, imageWidthPt, imageHeightPt, pageUrl, pageTitle, timestamp } = data;
+  const title = pageTitle || 'Untitled';
+  const sourceText = '\nSource: ' + title + ' ' + timestamp;
+
+  const requests = [
+    {
+      insertInlineImage: {
+        uri: imageUrl,
+        objectSize: {
+          width: { magnitude: imageWidthPt, unit: 'PT' },
+          height: { magnitude: imageHeightPt, unit: 'PT' },
+        },
+        location: { index: insertIndex },
+      },
+    },
+    {
+      insertText: {
+        location: { index: insertIndex + 1 },
+        text: sourceText,
+      },
+    },
+  ];
+
+  const batchUrl = `${DOCS_API_BASE}/${documentId}:batchUpdate`;
+  let res = await fetch(batchUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ requests }),
+  });
+
+  if (res.status === 401) throw new Error('SESSION_EXPIRED');
+  if (!res.ok) {
+    const body = await res.text();
+    let message = `Docs API error: ${res.status}`;
+    try {
+      const json = JSON.parse(body);
+      if (json.error?.message) message = json.error.message;
+    } catch (_) {
+      if (body) message += ` ${body.slice(0, 200)}`;
+    }
+    throw new Error(message);
+  }
+
+  const linkStart = insertIndex + 1 + 9; // after "\nSource: "
+  const linkEnd = linkStart + title.length;
+  const linkRequests = [
+    {
+      updateTextStyle: {
+        range: { startIndex: linkStart, endIndex: linkEnd },
+        textStyle: { link: { url: pageUrl || '#' } },
+        fields: 'link',
+      },
+    },
+  ];
+
+  res = await fetch(batchUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ requests: linkRequests }),
+  });
+
+  if (res.status === 401) throw new Error('SESSION_EXPIRED');
+  if (!res.ok) {
+    const body = await res.text();
+    let message = `Docs API error: ${res.status}`;
+    try {
+      const json = JSON.parse(body);
+      if (json.error?.message) message = json.error.message;
+    } catch (_) {
+      if (body) message += ` ${body.slice(0, 200)}`;
+    }
+    throw new Error(message);
+  }
+}

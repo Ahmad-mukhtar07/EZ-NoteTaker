@@ -14,6 +14,10 @@ export function ConnectedDocument({ documentName, onChangeDocument, disabled = f
   const [plugSections, setPlugSections] = useState([]);
   const [plugError, setPlugError] = useState(null);
   const [plugSuccess, setPlugSuccess] = useState(false);
+  const [snipStep, setSnipStep] = useState(null); // null | 'loading_sections' | 'sections'
+  const [snipSections, setSnipSections] = useState([]);
+  const [snipError, setSnipError] = useState(null);
+  const [snipSuccess, setSnipSuccess] = useState(false);
 
   // On popup open: restore snip button state so it stays clicked if overlay is still active
   useEffect(() => {
@@ -23,16 +27,35 @@ export function ConnectedDocument({ documentName, onChangeDocument, disabled = f
     });
   }, []);
 
-  // When overlay is closed (complete/cancel/error), background sets state false; keep button in sync
+  const SNIP_SUCCESS_KEY = 'eznote_snip_insert_success';
+
+  // When overlay is closed (complete/cancel/error), background sets state false; keep button in sync. Also show success when snip insert completes.
   useEffect(() => {
     const storage = chrome.storage?.session || chrome.storage?.local;
     if (!storage?.onChanged) return;
-    const key = 'eznote_snip_overlay_active';
     const listener = (changes) => {
-      if (changes[key] !== undefined) setSnipActive(!!changes[key].newValue);
+      if (changes['eznote_snip_overlay_active'] !== undefined) setSnipActive(!!changes['eznote_snip_overlay_active'].newValue);
+      if (changes[SNIP_SUCCESS_KEY] !== undefined && changes[SNIP_SUCCESS_KEY].newValue === true) {
+        setSnipSuccess(true);
+        storage.remove(SNIP_SUCCESS_KEY);
+        setTimeout(() => setSnipSuccess(false), 2500);
+      }
     };
     storage.onChanged.addListener(listener);
     return () => storage.onChanged.removeListener(listener);
+  }, []);
+
+  // On popup open: if snip just succeeded (e.g. user had popup closed), show success once
+  useEffect(() => {
+    const storage = chrome.storage?.session || chrome.storage?.local;
+    if (!storage?.get) return;
+    storage.get(SNIP_SUCCESS_KEY, (result) => {
+      if (result?.[SNIP_SUCCESS_KEY] === true) {
+        setSnipSuccess(true);
+        storage.remove(SNIP_SUCCESS_KEY);
+        setTimeout(() => setSnipSuccess(false), 2500);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -41,19 +64,63 @@ export function ConnectedDocument({ documentName, onChangeDocument, disabled = f
     };
   }, []);
 
-  const handleSnip = () => {
+  const handleSnip = async () => {
     if (typeof chrome === 'undefined' || !chrome.tabs?.query) return;
-    setSnipActive(true);
-    if (snipActiveTimer.current) clearTimeout(snipActiveTimer.current);
+    setSnipError(null);
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const tab = tabs[0];
+    if (!tab?.id) {
+      setSnipError('No active tab');
+      return;
+    }
+    setSnipStep('loading_sections');
+    try {
+      const secRes = await getDocSections();
+      if (!secRes?.success || !Array.isArray(secRes.sections) || secRes.sections.length === 0) {
+        setSnipError(secRes?.error || 'Could not load document sections');
+        setSnipStep(null);
+        return;
+      }
+      setSnipSections(secRes.sections);
+      setSnipStep('sections');
+    } catch (e) {
+      setSnipError(e instanceof Error ? e.message : 'Something went wrong');
+      setSnipStep(null);
+    }
+  };
+
+  const handlePickSnipSection = (section) => {
+    if (typeof chrome === 'undefined' || !chrome.tabs?.query) return;
+    setSnipError(null);
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0];
       if (!tab?.id) return;
-      chrome.runtime.sendMessage({ type: 'START_SNIP', tabId: tab.id }, () => {
-        if (chrome.runtime.lastError) {
-          console.error('EZ-NoteTaker: START_SNIP failed', chrome.runtime.lastError);
+      setSnipActive(true);
+      if (snipActiveTimer.current) clearTimeout(snipActiveTimer.current);
+      chrome.runtime.sendMessage(
+        { type: 'SNIP_START_WITH_SECTION', insertIndex: section.index, tabId: tab.id },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            setSnipError(chrome.runtime.lastError.message || 'Failed to start snip');
+            setSnipStep('sections');
+            return;
+          }
+          if (response?.error) {
+            setSnipError(response.error);
+            setSnipStep('sections');
+            return;
+          }
+          setSnipStep(null);
+          setSnipSections([]);
         }
-      });
+      );
     });
+  };
+
+  const handleCancelSnipSection = () => {
+    setSnipStep(null);
+    setSnipSections([]);
+    setSnipError(null);
   };
 
   const handlePlugItIn = async () => {
@@ -174,14 +241,48 @@ export function ConnectedDocument({ documentName, onChangeDocument, disabled = f
       {plugStep === 'inserting' && (
         <p className="connected-doc__plug-status">Adding…</p>
       )}
-      <button
-        type="button"
-        className={snipClass}
-        onClick={handleSnip}
-        disabled={disabled}
-      >
-        Snip and Plug
-      </button>
+      {snipStep === null && (
+        <button
+          type="button"
+          className={snipClass}
+          onClick={handleSnip}
+          disabled={disabled}
+        >
+          Snip and Plug
+        </button>
+      )}
+      {snipStep === 'loading_sections' && (
+        <p className="connected-doc__plug-status">Loading sections…</p>
+      )}
+      {snipError && snipStep === null && (
+        <p className="connected-doc__plug-error" role="alert">{snipError}</p>
+      )}
+      {snipSuccess && (
+        <p className="connected-doc__plug-success">Screenshot added to doc!</p>
+      )}
+      {snipStep === 'sections' && (
+        <div className="connected-doc__sections">
+          <p className="connected-doc__sections-label">Choose where to add the screenshot:</p>
+          <ul className="connected-doc__sections-list">
+            {snipSections.map((sec) => (
+              <li key={sec.index}>
+                <button
+                  type="button"
+                  className="connected-doc__section-btn"
+                  onClick={() => handlePickSnipSection(sec)}
+                  disabled={disabled}
+                >
+                  {sec.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {snipError && <p className="connected-doc__plug-error" role="alert">{snipError}</p>}
+          <button type="button" className="connected-doc__section-cancel" onClick={handleCancelSnipSection}>
+            Cancel
+          </button>
+        </div>
+      )}
       <button
         type="button"
         className="connected-doc__btn connected-doc__btn--magic"
