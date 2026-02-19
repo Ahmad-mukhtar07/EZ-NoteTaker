@@ -270,7 +270,9 @@ export async function getDocumentSections(documentId, accessToken) {
     const end = el.endIndex ?? el.startIndex ?? 0;
     if (end > maxEnd) maxEnd = end;
     const para = el.paragraph;
-    const isHeading = para && HEADING_STYLES.has(para.paragraphStyle?.namedStyleType);
+    const styleType = para?.paragraphStyle?.namedStyleType;
+    const isHeading = para && HEADING_STYLES.has(styleType);
+    const isTitleOrSubtitle = styleType === 'TITLE' || styleType === 'SUBTITLE';
     if (isHeading) {
       if (headingLabels.length > 0) {
         // Insert at last character of section's last paragraph (end - 1) so inserted text
@@ -279,15 +281,18 @@ export async function getDocumentSections(documentId, accessToken) {
         const insertAt = Math.max(1, lastContentEnd - 1);
         sectionEndIndices[sectionEndIndices.length - 1] = insertAt;
       }
-      let text = '';
-      if (Array.isArray(para.elements)) {
-        for (const e of para.elements) {
-          if (e.textRun?.content) text += e.textRun.content;
+      // Don't add title/subtitle as selectable sections
+      if (!isTitleOrSubtitle) {
+        let text = '';
+        if (Array.isArray(para.elements)) {
+          for (const e of para.elements) {
+            if (e.textRun?.content) text += e.textRun.content;
+          }
         }
+        text = text.replace(/\n/g, ' ').trim().slice(0, 60) || '(unnamed)';
+        headingLabels.push(text);
+        sectionEndIndices.push(null);
       }
-      text = text.replace(/\n/g, ' ').trim().slice(0, 60) || '(unnamed)';
-      headingLabels.push(text);
-      sectionEndIndices.push(null);
     } else {
       lastContentEnd = end;
     }
