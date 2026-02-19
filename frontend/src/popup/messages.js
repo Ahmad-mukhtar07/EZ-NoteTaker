@@ -53,3 +53,30 @@ export async function setSelectedDoc(documentId, documentName = '') {
 export async function createDoc(name = 'Untitled') {
   return sendMessage({ type: 'DOCS_CREATE', name: name || 'Untitled' });
 }
+
+/**
+ * Get selection from a tab (for Plug it in section flow).
+ * @param {number} tabId
+ * @returns {Promise<{ success: boolean, selection?: { selectedText, pageUrl, pageTitle, timestamp }, error?: string }>}
+ */
+export async function getPlugSelection(tabId) {
+  return sendMessage({ type: 'GET_PLUG_SELECTION', tabId });
+}
+
+/**
+ * Get document sections (insertion points) for the connected doc.
+ * @returns {Promise<{ success: boolean, sections?: Array<{ label: string, index: number }>, error?: string }>}
+ */
+export async function getDocSections() {
+  return sendMessage({ type: 'DOCS_GET_SECTIONS' });
+}
+
+/**
+ * Insert the given selection at the chosen index in the connected doc.
+ * @param {object} selectionData - { selectedText, pageUrl, pageTitle, timestamp }
+ * @param {number} insertIndex
+ * @returns {Promise<{ success: boolean, error?: string }>}
+ */
+export async function plugItInAtSection(selectionData, insertIndex) {
+  return sendMessage({ type: 'PLUG_IT_IN_AT_SECTION', selectionData, insertIndex });
+}

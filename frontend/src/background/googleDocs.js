@@ -4,7 +4,12 @@
  */
 
 import { fetchDocPreview as fetchDocPreviewLib } from '../lib/docsPreview.js';
-import { insertHighlightToDoc as insertHighlightLib, insertImageWithSource as insertImageLib } from '../lib/docsInsert.js';
+import {
+  insertHighlightToDoc as insertHighlightLib,
+  insertHighlightAtPosition as insertHighlightAtPositionLib,
+  insertImageWithSource as insertImageLib,
+  getDocumentSections as getDocumentSectionsLib,
+} from '../lib/docsInsert.js';
 
 const DRIVE_API_MEDIA = 'https://www.googleapis.com/drive/v3/files';
 
@@ -76,5 +81,7 @@ import { fetchDocsList as fetchDocsListLib } from '../lib/googleApi.js';
 
 export const fetchDocPreview = fetchDocPreviewLib;
 export const insertHighlightToDoc = insertHighlightLib;
+export const insertHighlightAtPosition = insertHighlightAtPositionLib;
 export const insertImageWithSource = insertImageLib;
+export const getDocumentSections = getDocumentSectionsLib;
 export const fetchDocsList = fetchDocsListLib;

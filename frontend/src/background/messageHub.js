@@ -5,8 +5,15 @@
 
 import { getValidToken, getTokenInteractive, withTokenRetry, disconnect } from './auth.js';
 import { getSelectedDocumentId, getSelectedDocumentName, setSelectedDocument } from '../lib/storage.js';
-import { fetchDocsList, fetchDocPreview, resolveBlockImageUrls } from './googleDocs.js';
+import {
+  fetchDocsList,
+  fetchDocPreview,
+  resolveBlockImageUrls,
+  getDocumentSections,
+  insertHighlightAtPosition,
+} from './googleDocs.js';
 import { createNewDoc } from './googleDrive.js';
+import { getSelectionAndPageInfo } from './captureSelection.js';
 import { log } from './logger.js';
 
 /**
@@ -84,6 +91,81 @@ export async function handleMessage(msg, sender) {
       return { sendResponse: true, response: { success: true, doc: { id: doc.id, name: doc.name } } };
     } catch (err) {
       log.bg.warn('DOCS_CREATE failed', err);
+      return {
+        sendResponse: true,
+        response: { success: false, error: err instanceof Error ? err.message : String(err) },
+      };
+    }
+  }
+
+  // --- Plug it in: get selection from tab ---
+  if (type === 'GET_PLUG_SELECTION') {
+    const tabId = msg.tabId;
+    if (!tabId) {
+      return { sendResponse: true, response: { success: false, error: 'No tab' } };
+    }
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      const selection = await getSelectionAndPageInfo(tab);
+      return {
+        sendResponse: true,
+        response: {
+          success: true,
+          selection: {
+            selectedText: selection.selectedText,
+            pageUrl: selection.pageUrl,
+            pageTitle: selection.pageTitle,
+            timestamp: selection.timestamp,
+          },
+        },
+      };
+    } catch (err) {
+      log.bg.warn('GET_PLUG_SELECTION failed', err);
+      return {
+        sendResponse: true,
+        response: { success: false, error: err instanceof Error ? err.message : String(err) },
+      };
+    }
+  }
+
+  // --- Plug it in: get document sections for placement ---
+  if (type === 'DOCS_GET_SECTIONS') {
+    try {
+      const documentId = await getSelectedDocumentId();
+      if (!documentId) {
+        return { sendResponse: true, response: { success: false, error: 'No document selected' } };
+      }
+      const sections = await withTokenRetry((token) => getDocumentSections(documentId, token));
+      return { sendResponse: true, response: { success: true, sections } };
+    } catch (err) {
+      log.bg.warn('DOCS_GET_SECTIONS failed', err);
+      return {
+        sendResponse: true,
+        response: { success: false, error: err instanceof Error ? err.message : String(err) },
+      };
+    }
+  }
+
+  // --- Plug it in: insert at chosen section ---
+  if (type === 'PLUG_IT_IN_AT_SECTION') {
+    const { selectionData, insertIndex } = msg;
+    if (!selectionData || typeof insertIndex !== 'number') {
+      return {
+        sendResponse: true,
+        response: { success: false, error: 'Missing selectionData or insertIndex' },
+      };
+    }
+    try {
+      const documentId = await getSelectedDocumentId();
+      if (!documentId) {
+        return { sendResponse: true, response: { success: false, error: 'No document selected' } };
+      }
+      await withTokenRetry((token) =>
+        insertHighlightAtPosition(documentId, token, selectionData, insertIndex)
+      );
+      return { sendResponse: true, response: { success: true } };
+    } catch (err) {
+      log.bg.warn('PLUG_IT_IN_AT_SECTION failed', err);
       return {
         sendResponse: true,
         response: { success: false, error: err instanceof Error ? err.message : String(err) },

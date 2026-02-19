@@ -50,7 +50,18 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  const hubTypes = ['AUTH_GET_STATUS', 'AUTH_CONNECT', 'AUTH_DISCONNECT', 'DOCS_LIST', 'DOCS_SET_SELECTED', 'DOCS_CREATE', 'GET_DOC_PREVIEW'];
+  const hubTypes = [
+    'AUTH_GET_STATUS',
+    'AUTH_CONNECT',
+    'AUTH_DISCONNECT',
+    'DOCS_LIST',
+    'DOCS_SET_SELECTED',
+    'DOCS_CREATE',
+    'DOCS_GET_SECTIONS',
+    'GET_PLUG_SELECTION',
+    'PLUG_IT_IN_AT_SECTION',
+    'GET_DOC_PREVIEW',
+  ];
   if (hubTypes.includes(msg?.type)) {
     handleMessage(msg, sender)
       .then((r) => {
