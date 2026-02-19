@@ -300,12 +300,14 @@ export async function getDocumentSections(documentId, accessToken) {
   if (sectionEndIndices.length > 0) {
     sectionEndIndices[sectionEndIndices.length - 1] = Math.max(1, lastContentEnd - 1);
   }
+  // Insert index must be strictly less than segment endIndex; use maxEnd - 1 for end of doc.
+  const endOfDocIndex = Math.max(1, maxEnd - 1);
   const sections = [{ label: 'At the beginning', index: 1 }];
   for (let i = 0; i < headingLabels.length; i++) {
-    const idx = sectionEndIndices[i] != null ? sectionEndIndices[i] : maxEnd;
+    const idx = sectionEndIndices[i] != null ? sectionEndIndices[i] : endOfDocIndex;
     sections.push({ label: 'End of section: ' + headingLabels[i], index: idx });
   }
-  sections.push({ label: 'At the end', index: maxEnd });
+  sections.push({ label: 'At the end', index: endOfDocIndex });
   return sections;
 }
 
