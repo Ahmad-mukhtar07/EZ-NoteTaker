@@ -95,6 +95,7 @@ export function ConnectedDocument({ documentName, onChangeDocument, disabled = f
         Magic AI Format <span className="connected-doc__coming-soon">(Coming soon)</span>
       </button>
       <p className="connected-doc__hint connected-doc__hint--magic">AI-powered cleanup and structure for your doc. Coming soon.</p>
+      <p className="connected-doc__hint connected-doc__hint--cursor">Tip: Open your doc in a new tab (below) to add at cursor with Plug it in or Snip and Plug.</p>
       <button
         type="button"
         className="connected-doc__change"

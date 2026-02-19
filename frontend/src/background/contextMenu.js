@@ -44,7 +44,7 @@ export async function onContextMenuClick(info, tab) {
       showNotification('No text selected', 'Select some text on the page, then right‑click and choose "Plug it in".');
       return;
     }
-    await plugHighlightIntoDoc(selection);
+    await plugHighlightIntoDoc(selection, tab.id);
   } catch (err) {
     console.error('EZ-NoteTaker: plug it in failed', err);
     showNotification(
@@ -68,7 +68,7 @@ export async function plugSelectionFromTab(tabId) {
       showNotification('No text selected', 'Select some text on the page, then click "Plug it in" in the extension.');
       return;
     }
-    await plugHighlightIntoDoc(selection);
+    await plugHighlightIntoDoc(selection, tab.id);
   } catch (err) {
     console.error('EZ-NoteTaker: plug it in failed', err);
     showNotification(

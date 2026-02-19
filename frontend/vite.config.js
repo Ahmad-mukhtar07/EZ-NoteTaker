@@ -60,6 +60,11 @@ export default defineConfig(({ mode }) => {
             dest: '.',
             rename: 'snipOverlay.js',
           },
+          {
+            src: 'src/content/docsDocPaste.js',
+            dest: '.',
+            rename: 'docsDocPaste.js',
+          },
         ],
       }),
     ],

@@ -8,6 +8,7 @@ import { withTokenRetry } from './auth.js';
 import { ensureResearchSnipsFolder, uploadImageToDrive } from './googleDrive.js';
 import { insertImageWithSource } from './googleDocs.js';
 import { showNotification } from './notifications.js';
+import { tryPasteImageAtCursorInDocTab } from './pasteAtCursor.js';
 
 const SNIP_OVERLAY_PATH = 'snipOverlay.js';
 
@@ -69,10 +70,26 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
     return;
   }
 
-  const blob = await fetch(cropResult.base64).then((r) => r.blob());
   const pageUrl = pageInfo.pageUrl ?? '';
   const pageTitle = pageInfo.pageTitle ?? 'Untitled';
   const timestamp = new Date().toISOString();
+  const sourceText = '\nSource: ' + pageTitle + ' ' + timestamp;
+
+  const pastedAtCursor = await tryPasteImageAtCursorInDocTab(
+    documentId,
+    tabId,
+    cropResult.base64,
+    sourceText
+  );
+  if (pastedAtCursor) {
+    try {
+      await chrome.tabs.sendMessage(tabId, { type: 'REMOVE_SNIP_OVERLAY' });
+    } catch (_) {}
+    showNotification('Snip and Plug', 'Screenshot added at cursor in your open doc.');
+    return;
+  }
+
+  const blob = await fetch(cropResult.base64).then((r) => r.blob());
   const filename = `eznote-snip-${Date.now()}.png`;
   const widthPt = cropResult.width ?? 400;
   const heightPt = cropResult.height ?? 300;

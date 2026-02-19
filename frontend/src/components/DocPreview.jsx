@@ -92,7 +92,7 @@ const AUTO_REFRESH_MS = 4000;
 const DOCS_EDIT_URL = (id) => `https://docs.google.com/document/d/${id}/edit`;
 
 export function DocPreview({ documentId }) {
-  const [previewMode, setPreviewMode] = useState(null); // null | 'full' | 'noImages'
+  const [previewMode, setPreviewMode] = useState(null); // null | 'full' | 'noImages' | 'live'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -134,6 +134,7 @@ export function DocPreview({ documentId }) {
 
   const showPreview = previewMode !== null;
   const isNoImagesMode = previewMode === 'noImages';
+  const isLiveMode = previewMode === 'live';
 
   const handlePreviewFull = () => {
     if (previewMode === 'full') {
@@ -151,6 +152,14 @@ export function DocPreview({ documentId }) {
     }
     setPreviewMode('noImages');
     if (!preview && !loading) fetchPreview();
+  };
+
+  const handlePreviewLive = () => {
+    if (previewMode === 'live') {
+      setPreviewMode(null);
+      return;
+    }
+    setPreviewMode('live');
   };
 
   const handleHidePreview = () => {
@@ -178,6 +187,16 @@ export function DocPreview({ documentId }) {
       <div className="doc-preview__toggles" role="group" aria-label="Preview mode">
         <button
           type="button"
+          className={`doc-preview__toggle ${previewMode === 'live' ? 'doc-preview__toggle--active' : ''}`}
+          onClick={handlePreviewLive}
+          aria-pressed={previewMode === 'live'}
+          title="Open the document in this panel to view and edit directly"
+        >
+          Live doc
+        </button>
+        <span className="doc-preview__toggle-divider" aria-hidden="true" />
+        <button
+          type="button"
           className={`doc-preview__toggle ${previewMode === 'full' ? 'doc-preview__toggle--active' : ''}`}
           onClick={handlePreviewFull}
           aria-pressed={previewMode === 'full'}
@@ -196,45 +215,78 @@ export function DocPreview({ documentId }) {
       </div>
       {showPreview && (
         <div className="doc-preview__body">
-          {loading && <p className="doc-preview__loading">Loading…</p>}
-          {error && !loading && (
-            <div className="doc-preview__error">
-              <p>{error}</p>
-              <button type="button" className="doc-preview__refresh" onClick={handleRefresh}>
-                Retry
-              </button>
-            </div>
-          )}
-          {preview && !loading && (
+          {isLiveMode ? (
             <>
               <div className="doc-preview__toolbar">
                 {documentId && (
-                  <button type="button" className="doc-preview__open-doc" onClick={handleOpenDoc} title="Open in Google Docs">
-                    Open doc
+                  <button type="button" className="doc-preview__open-doc" onClick={handleOpenDoc} title="Open in a new browser tab">
+                    Open in new tab
                   </button>
-                )}
-                {!isNoImagesMode ? (
-                  <button type="button" className="doc-preview__refresh" onClick={handleRefresh}>
-                    Refresh
-                  </button>
-                ) : (
-                  <span className="doc-preview__auto-refresh">Auto-refresh {AUTO_REFRESH_MS / 1000}s</span>
                 )}
                 <button type="button" className="doc-preview__hide" onClick={handleHidePreview}>
                   Close
                 </button>
               </div>
-              <div className="doc-preview__content">
-                <h3 className="doc-preview__title">{preview.title}</h3>
-                {preview.blocks.length === 0 ? (
-                  <p className="doc-preview__empty">(Empty document)</p>
-                ) : (
-                  <PreviewBlocks
-                    blocks={preview.blocks}
-                    replaceImagesWithPlaceholder={isNoImagesMode}
+              {documentId ? (
+                <div className="doc-preview__live-wrap">
+                  <iframe
+                    title="Google Doc"
+                    className="doc-preview__iframe"
+                    src={DOCS_EDIT_URL(documentId)}
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                    referrerPolicy="no-referrer"
                   />
-                )}
-              </div>
+                  <p className="doc-preview__live-hint">
+                    If the doc doesn’t load here, use <strong>Open in new tab</strong> to edit. Edits in the tab and here (if loaded) sync to the same document.
+                  </p>
+                </div>
+              ) : (
+                <p className="doc-preview__loading">No document selected.</p>
+              )}
+            </>
+          ) : (
+            <>
+              {loading && <p className="doc-preview__loading">Loading…</p>}
+              {error && !loading && (
+                <div className="doc-preview__error">
+                  <p>{error}</p>
+                  <button type="button" className="doc-preview__refresh" onClick={handleRefresh}>
+                    Retry
+                  </button>
+                </div>
+              )}
+              {preview && !loading && (
+                <>
+                  <div className="doc-preview__toolbar">
+                    {documentId && (
+                      <button type="button" className="doc-preview__open-doc" onClick={handleOpenDoc} title="Open in Google Docs">
+                        Open in new tab
+                      </button>
+                    )}
+                    {!isNoImagesMode ? (
+                      <button type="button" className="doc-preview__refresh" onClick={handleRefresh}>
+                        Refresh
+                      </button>
+                    ) : (
+                      <span className="doc-preview__auto-refresh">Auto-refresh {AUTO_REFRESH_MS / 1000}s</span>
+                    )}
+                    <button type="button" className="doc-preview__hide" onClick={handleHidePreview}>
+                      Close
+                    </button>
+                  </div>
+                  <div className="doc-preview__content">
+                    <h3 className="doc-preview__title">{preview.title}</h3>
+                    {preview.blocks.length === 0 ? (
+                      <p className="doc-preview__empty">(Empty document)</p>
+                    ) : (
+                      <PreviewBlocks
+                        blocks={preview.blocks}
+                        replaceImagesWithPlaceholder={isNoImagesMode}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

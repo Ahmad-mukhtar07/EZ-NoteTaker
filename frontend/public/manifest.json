@@ -12,6 +12,13 @@
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": ["https://docs.google.com/document/*"],
+      "js": ["docsDocPaste.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "permissions": [
     "identity",
     "identity.email",
@@ -23,9 +30,7 @@
     "tabs",
     "sidePanel"
   ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "host_permissions": ["<all_urls>"],
   "oauth2": {
     "client_id": "__VITE_OAUTH_CLIENT_ID__",
     "scopes": [
