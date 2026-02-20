@@ -4,6 +4,9 @@ import { ConnectGoogleDocsButton } from './components/ConnectGoogleDocsButton';
 import { DocsList } from './components/DocsList';
 import { ConnectedDocument } from './components/ConnectedDocument';
 import { DocPreview } from './components/DocPreview';
+import { LoginPage } from './components/LoginPage';
+import { useAuth } from './hooks/useAuth';
+import { isSupabaseConfigured } from './config/supabase-config.js';
 import './App.css';
 
 const STATUS = {
@@ -13,12 +16,16 @@ const STATUS = {
 };
 
 function App() {
+  const { user: supabaseUser, loading: authLoading, logout: supabaseLogout, tier } = useAuth();
   const [status, setStatus] = useState(STATUS.NOT_CONNECTED);
   const [documentId, setDocumentId] = useState(null);
   const [documentName, setDocumentName] = useState(null);
   const [showDocList, setShowDocList] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [apiLoading, setApiLoading] = useState(false);
+
+  // Route guard: only show login when auth is resolved and there is no session (no flash).
+  const showSupabaseLogin = isSupabaseConfigured && !authLoading && !supabaseUser;
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -96,7 +103,13 @@ function App() {
     setShowDocList(true);
   };
 
-  if (initializing) {
+  // (1) Unauthenticated → login only
+  if (showSupabaseLogin) {
+    return <LoginPage />;
+  }
+
+  // (2) Session check on load: show loading until auth resolved, then dashboard
+  if (authLoading || initializing) {
     return (
       <div className="app app--popup">
         <header className="app__header">
@@ -126,17 +139,29 @@ function App() {
             {statusLabel}
           </span>
         </div>
-        {isConnected && (
-          <button
-            type="button"
-            className="app__logout"
-            onClick={handleDisconnect}
-            disabled={apiLoading}
-            aria-busy={apiLoading}
-          >
-            Disconnect
-          </button>
-        )}
+        <div className="app__header-actions">
+          {isSupabaseConfigured && supabaseUser && (
+            <button
+              type="button"
+              className="app__logout"
+              onClick={supabaseLogout}
+              aria-label="Sign out of account"
+            >
+              Sign out
+            </button>
+          )}
+          {isConnected && (
+            <button
+              type="button"
+              className="app__logout"
+              onClick={handleDisconnect}
+              disabled={apiLoading}
+              aria-busy={apiLoading}
+            >
+              Disconnect
+            </button>
+          )}
+        </div>
       </header>
       <main className="app__body">
         {hasSelectedDoc && (
