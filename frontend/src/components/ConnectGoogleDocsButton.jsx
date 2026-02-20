@@ -9,8 +9,11 @@ export function ConnectGoogleDocsButton({ onSuccess, disabled = false }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [redirectUri, setRedirectUri] = useState(null);
+
   const handleClick = async () => {
     setError(null);
+    setRedirectUri(null);
     setLoading(true);
     try {
       const res = await authConnect();
@@ -18,6 +21,7 @@ export function ConnectGoogleDocsButton({ onSuccess, disabled = false }) {
         onSuccess?.();
       } else {
         setError(res?.error || 'Something went wrong');
+        if (res?.redirectUri) setRedirectUri(res.redirectUri);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong';
@@ -38,7 +42,18 @@ export function ConnectGoogleDocsButton({ onSuccess, disabled = false }) {
       >
         {loading ? 'Connecting…' : 'Connect Google Docs'}
       </button>
-      {error && <p className="connect-google-docs__error" role="alert">{error}</p>}
+      {error && (
+        <div className="connect-google-docs__error" role="alert">
+          <p>{error}</p>
+          {redirectUri && (
+            <p className="connect-google-docs__redirect-hint">
+              Add this <strong>exact</strong> URI in Google Cloud Console → your Web application client → Authorized redirect URIs:
+              <br />
+              <code className="connect-google-docs__redirect-uri">{redirectUri}</code>
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

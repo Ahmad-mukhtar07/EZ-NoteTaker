@@ -30,6 +30,27 @@
   color: #c5221f;
 }
 
+.connect-google-docs__error p {
+  margin: 0 0 0.35rem;
+}
+
+.connect-google-docs__redirect-hint {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.4;
+}
+
+.connect-google-docs__redirect-uri {
+  display: block;
+  margin-top: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  word-break: break-all;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
 @media (prefers-color-scheme: light) {
   .connect-google-docs__btn {
     background: #1a73e8;

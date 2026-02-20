@@ -3,7 +3,7 @@
  * background handles auth, token retry, and API calls. All Google API access is here.
  */
 
-import { getValidToken, getTokenInteractive, withTokenRetry, disconnect } from './auth.js';
+import { getValidToken, getTokenInteractive, withTokenRetry, disconnect, clearAuthState } from './auth.js';
 import { getSelectedDocumentId, getSelectedDocumentName, setSelectedDocument } from '../lib/storage.js';
 import {
   fetchDocsList,
@@ -41,14 +41,21 @@ export async function handleMessage(msg, sender) {
   }
 
   if (type === 'AUTH_CONNECT') {
+    const redirectUri = typeof chrome?.identity?.getRedirectURL === 'function' ? chrome.identity.getRedirectURL('oauth2') : '';
     try {
-      await getTokenInteractive({ interactive: true });
+      await clearAuthState();
+      const webClientId = msg.webClientId || '';
+      await getTokenInteractive({ interactive: true, webClientId });
       return { sendResponse: true, response: { success: true } };
     } catch (err) {
       log.bg.warn('AUTH_CONNECT failed', err);
       return {
         sendResponse: true,
-        response: { success: false, error: err instanceof Error ? err.message : String(err) },
+        response: {
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+          redirectUri,
+        },
       };
     }
   }

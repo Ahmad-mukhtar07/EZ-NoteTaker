@@ -5,8 +5,6 @@
 
 import {
   getAuthToken,
-  getAuthTokenSilent,
-  removeCachedAuthToken,
   storeAccessToken,
   getStoredAccessToken,
   clearStoredAccessToken,
@@ -36,23 +34,102 @@ export function isAuthError(err) {
 }
 
 /**
- * Get a valid token for API use (silent first, then stored).
- * Does not validate with a network call; validation happens on first API use.
+ * Get a valid token for API use. Only returns a token from the explicit "Connect Google Docs"
+ * flow (stored token). Does not use Chrome's primary account—user must click Connect and pick an account.
  * @returns {Promise<string|null>}
  */
 export async function getValidToken() {
-  const token = await getAuthTokenSilent().catch(() => null) || await getStoredAccessToken();
-  return token || null;
+  return getStoredAccessToken();
+}
+
+/**
+ * Get a token via launchWebAuthFlow so the user can choose which Google account to use.
+ * Uses the Web application OAuth client ID (with redirect URI), passed from the popup.
+ * @param {string} [webClientId] - Web application client ID from .env (popup sends it). Required for Connect flow.
+ * @returns {Promise<string>} token
+ * @throws {Error} when user cancels or flow fails
+ */
+export async function getTokenViaLaunchWebAuthFlow(webClientId) {
+  const IDENTITY = chrome?.identity;
+  if (!IDENTITY?.getRedirectURL || !IDENTITY?.launchWebAuthFlow) {
+    throw new Error('Chrome identity API is not available.');
+  }
+
+  const manifest = chrome.runtime.getManifest();
+  const scopes = Array.isArray(manifest?.oauth2?.scopes) ? manifest.oauth2.scopes : [];
+  if (scopes.length === 0) {
+    throw new Error('OAuth2 scopes missing in manifest.');
+  }
+
+  const clientId = (webClientId && webClientId.trim()) || manifest?.oauth2?.client_id;
+  if (!clientId) {
+    throw new Error(
+      'Set VITE_GOOGLE_DOCS_WEB_CLIENT_ID in .env to your Web application OAuth client ID (with redirect URI ' +
+        IDENTITY.getRedirectURL() + ').'
+    );
+  }
+
+  // Redirect URI must match Google Console exactly. Use path "oauth2" (Chromium docs / launchWebAuthFlow).
+  const redirectUri = IDENTITY.getRedirectURL('oauth2');
+  const scope = scopes.join(' ');
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: 'token',
+    scope,
+    prompt: 'select_account',
+  });
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+
+  return new Promise((resolve, reject) => {
+    IDENTITY.launchWebAuthFlow(
+      { url: authUrl, interactive: true },
+      (callbackUrl) => {
+        if (chrome.runtime?.lastError) {
+          const msg = chrome.runtime.lastError.message || '';
+          if (msg.toLowerCase().includes('cancel') || msg.includes('access_denied')) {
+            reject(new Error('Sign-in was cancelled.'));
+            return;
+          }
+          reject(new Error(chrome.runtime.lastError.message || 'Sign-in failed.'));
+          return;
+        }
+        if (!callbackUrl) {
+          reject(new Error('No callback URL received.'));
+          return;
+        }
+
+        const hash = new URL(callbackUrl).hash?.slice(1) || '';
+        const hashParams = new URLSearchParams(hash);
+        const accessToken = hashParams.get('access_token');
+        if (!accessToken) {
+          const err = hashParams.get('error_description') || hashParams.get('error') || 'Missing access token';
+          reject(new Error(err));
+          return;
+        }
+        storeAccessToken(accessToken).then(() => resolve(accessToken));
+      }
+    );
+  });
 }
 
 /**
  * Get a token, optionally interactive (for "Connect" flow).
- * @param {{ interactive: boolean }} [options]
+ * Uses launchWebAuthFlow with webClientId when provided; falls back to getAuthToken.
+ * @param {{ interactive: boolean, webClientId?: string }} [options]
  * @returns {Promise<string>} token
  * @throws {Error} when user cancels or not available
  */
 export async function getTokenInteractive(options = { interactive: false }) {
   if (options.interactive) {
+    const webClientId = options.webClientId || '';
+    if (webClientId.trim()) {
+      try {
+        return await getTokenViaLaunchWebAuthFlow(webClientId.trim());
+      } catch (err) {
+        log.bg.warn('launchWebAuthFlow failed, falling back to getAuthToken', err?.message);
+      }
+    }
     const token = await getAuthToken();
     await storeAccessToken(token);
     return token;
@@ -63,14 +140,14 @@ export async function getTokenInteractive(options = { interactive: false }) {
 }
 
 /**
- * Run an async function with a valid token. On 401, invalidate cache, reacquire token, retry once.
- * If retry still fails (or no new token), notifies user and clears auth state.
+ * Run an async function with a valid token. On 401, clears auth and notifies user to reconnect.
+ * (No automatic retry with a different token, so the chosen Google account is preserved.)
  * @param {(token: string) => Promise<T>} fn - Function that performs the API call(s). Should throw Error('SESSION_EXPIRED') on 401.
  * @returns {Promise<T>}
  * @throws {Error} Re-throws non-auth errors; auth failures throw after notifying user.
  */
 export async function withTokenRetry(fn) {
-  let token = await getValidToken();
+  const token = await getValidToken();
   if (!token) {
     log.bg.warn('withTokenRetry: no token');
     throw new Error('Sign in required');
@@ -80,26 +157,10 @@ export async function withTokenRetry(fn) {
     return await fn(token);
   } catch (err) {
     if (!isAuthError(err)) throw err;
-
-    log.bg.info('Auth error, invalidating cache and retrying once');
-    await removeCachedAuthToken(token);
-    const newToken = await getAuthTokenSilent().catch(() => null);
-    if (!newToken) {
-      await clearAuthState();
-      showNotification('Session expired', 'Please open the extension and connect Google Docs again.');
-      throw new Error('Session expired');
-    }
-    await storeAccessToken(newToken);
-
-    try {
-      return await fn(newToken);
-    } catch (retryErr) {
-      if (isAuthError(retryErr)) {
-        await clearAuthState();
-        showNotification('Session expired', 'Please open the extension and connect Google Docs again.');
-      }
-      throw retryErr;
-    }
+    log.bg.info('Auth error, clearing state');
+    await clearAuthState();
+    showNotification('Session expired', 'Please open the extension and connect Google Docs again.');
+    throw new Error('Session expired');
   }
 }
 

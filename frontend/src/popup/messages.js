@@ -30,7 +30,8 @@ export async function getAuthStatus() {
 }
 
 export async function authConnect() {
-  return sendMessage({ type: 'AUTH_CONNECT' });
+  const webClientId = typeof import.meta !== 'undefined' && import.meta.env?.VITE_GOOGLE_DOCS_WEB_CLIENT_ID;
+  return sendMessage({ type: 'AUTH_CONNECT', webClientId: webClientId || '' });
 }
 
 export async function authDisconnect() {

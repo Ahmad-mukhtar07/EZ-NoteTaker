@@ -13,22 +13,24 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, projectRoot, '');
   const envDirs = [projectRoot, __dirname];
 
-  function getClientId() {
-    let clientId = env.VITE_OAUTH_CLIENT_ID || '';
+  function readEnvVar(name) {
+    let val = env[name] || '';
     for (const dir of envDirs) {
       const envPath = path.resolve(dir, '.env');
-      if (!clientId && fs.existsSync(envPath)) {
+      if (!val && fs.existsSync(envPath)) {
         const envContent = fs.readFileSync(envPath, 'utf-8');
-        const m = envContent.match(/VITE_OAUTH_CLIENT_ID=(.+)/);
+        const m = envContent.match(new RegExp(name + '=(.+)'));
         if (m) {
-          clientId = m[1].trim().replace(/^["']|["']$/g, '');
+          val = m[1].trim().replace(/^["']|["']$/g, '');
           break;
         }
       }
     }
-    return clientId;
+    return val;
   }
-
+  function getClientId() {
+    return readEnvVar('VITE_OAUTH_CLIENT_ID');
+  }
   const outDir = path.resolve(projectRoot, 'build');
 
   return {
