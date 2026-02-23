@@ -82,6 +82,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.15);
+  padding: 0.5rem;
 }
 
 .snip-history__list {
