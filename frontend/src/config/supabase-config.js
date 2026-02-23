@@ -21,5 +21,5 @@ const supabaseClient = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
-export { supabaseClient };
+export { supabaseClient, supabaseUrl, supabaseAnonKey };
 export default supabaseClient;

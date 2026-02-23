@@ -14,6 +14,7 @@ import {
 } from './googleDocs.js';
 import { createNewDoc } from './googleDrive.js';
 import { getSelectionAndPageInfo } from './captureSelection.js';
+import { recordSnipAndCheckLimit, getSnipUsage } from './snipUsage.js';
 import { log } from './logger.js';
 
 /**
@@ -167,6 +168,27 @@ export async function handleMessage(msg, sender) {
       if (!documentId) {
         return { sendResponse: true, response: { success: false, error: 'No document selected' } };
       }
+      const usage = await recordSnipAndCheckLimit({
+        content: selectionData.selectedText ?? '',
+        source_url: documentId ? `https://docs.google.com/document/d/${documentId}/edit` : '',
+        target_doc_id: documentId,
+      });
+      if (usage.error === 'snip_limit_reached') {
+        return {
+          sendResponse: true,
+          response: { success: false, error: 'snip_limit_reached', limit: usage.limit },
+        };
+      }
+      if (usage.error) {
+        return {
+          sendResponse: true,
+          response: {
+            success: false,
+            error: usage.error === 'not_authenticated' ? 'not_authenticated' : usage.error,
+            limit: usage.limit,
+          },
+        };
+      }
       await withTokenRetry((token) =>
         insertHighlightAtPosition(documentId, token, selectionData, insertIndex)
       );
@@ -176,6 +198,19 @@ export async function handleMessage(msg, sender) {
       return {
         sendResponse: true,
         response: { success: false, error: err instanceof Error ? err.message : String(err) },
+      };
+    }
+  }
+
+  // --- Snip usage (for disabling Snip and Plug when limit reached) ---
+  if (type === 'GET_SNIP_USAGE') {
+    try {
+      const usage = await getSnipUsage();
+      return { sendResponse: true, response: usage };
+    } catch (err) {
+      return {
+        sendResponse: true,
+        response: { error: err instanceof Error ? err.message : String(err), allowed: true },
       };
     }
   }

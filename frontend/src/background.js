@@ -61,6 +61,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     'GET_PLUG_SELECTION',
     'PLUG_IT_IN_AT_SECTION',
     'GET_DOC_PREVIEW',
+    'GET_SNIP_USAGE',
   ];
   if (hubTypes.includes(msg?.type)) {
     handleMessage(msg, sender)

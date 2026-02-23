@@ -81,3 +81,11 @@ export async function getDocSections() {
 export async function plugItInAtSection(selectionData, insertIndex) {
   return sendMessage({ type: 'PLUG_IT_IN_AT_SECTION', selectionData, insertIndex });
 }
+
+/**
+ * Get current snip usage (used, limit, allowed). For disabling "Snip and Plug" when limit reached.
+ * @returns {Promise<{ used?: number, limit?: number, allowed?: boolean, error?: string }>}
+ */
+export async function getSnipUsage() {
+  return sendMessage({ type: 'GET_SNIP_USAGE' });
+}

@@ -51,6 +51,9 @@ export function AuthProvider({ children }) {
         if (cancelled) return;
         const nextUser = session?.user ?? null;
         setUser(nextUser);
+        if (nextUser && session?.access_token && chrome?.storage?.local) {
+          chrome.storage.local.set({ eznote_supabase_access_token: session.access_token });
+        }
         if (nextUser) {
           loadProfile(nextUser.id).catch(() => {});
         }
@@ -68,8 +71,15 @@ export function AuthProvider({ children }) {
         if (cancelled) return;
         const nextUser = session?.user ?? null;
         setUser(nextUser);
-        if (!nextUser) setProfile(null);
-        else loadProfile(nextUser.id).catch(() => {});
+        if (!nextUser) {
+          setProfile(null);
+          if (chrome?.storage?.local) chrome.storage.local.remove('eznote_supabase_access_token');
+        } else {
+          loadProfile(nextUser.id).catch(() => {});
+          if (session?.access_token && chrome?.storage?.local) {
+            chrome.storage.local.set({ eznote_supabase_access_token: session.access_token });
+          }
+        }
       }
     );
 
@@ -84,6 +94,19 @@ export function AuthProvider({ children }) {
     await supabaseClient.auth.signOut();
     setUser(null);
     setProfile(null);
+    if (chrome?.storage?.local) chrome.storage.local.remove('eznote_supabase_access_token');
+  }, []);
+
+  /** Sync current Supabase session token to chrome.storage so the background script uses the right user. Call before fetching snip usage after account switch. */
+  const syncSessionTokenToStorage = useCallback(() => {
+    if (!isSupabaseConfigured || !supabaseClient || !chrome?.storage?.local) return Promise.resolve();
+    return supabaseClient.auth.getSession().then(({ data }) => {
+      const session = data?.session ?? null;
+      if (!session?.access_token) return Promise.resolve();
+      return new Promise((resolve) => {
+        chrome.storage.local.set({ eznote_supabase_access_token: session.access_token }, resolve);
+      });
+    });
   }, []);
 
   const value = {
@@ -93,6 +116,7 @@ export function AuthProvider({ children }) {
     profile,
     tier,
     profileUserId,
+    syncSessionTokenToStorage,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { getPlugSelection, getDocSections, plugItInAtSection } from '../popup/messages.js';
+import { getPlugSelection, getDocSections, plugItInAtSection, getSnipUsage } from '../popup/messages.js';
+import { useAuth } from '../hooks/useAuth.js';
+import { UpgradeModal } from './UpgradeModal';
 import './ConnectedDocument.css';
 
 /**
@@ -7,6 +9,7 @@ import './ConnectedDocument.css';
  * "Plug it in" opens a section picker to choose where to insert the selected text.
  */
 export function ConnectedDocument({ documentName, onChangeDocument, disabled = false }) {
+  const { user: supabaseUser, syncSessionTokenToStorage } = useAuth();
   const [snipActive, setSnipActive] = useState(false);
   const snipActiveTimer = useRef(null);
   const [plugStep, setPlugStep] = useState(null); // null | 'loading' | 'sections' | 'inserting'
@@ -18,14 +21,47 @@ export function ConnectedDocument({ documentName, onChangeDocument, disabled = f
   const [snipSections, setSnipSections] = useState([]);
   const [snipError, setSnipError] = useState(null);
   const [snipSuccess, setSnipSuccess] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalLimit, setUpgradeModalLimit] = useState(25);
+  // Block Snip and Plug by default until we've queried usage (then allow only if under limit)
+  const [snipUsage, setSnipUsage] = useState({ used: 0, limit: 25, allowed: false });
+  const [snipUsageLoaded, setSnipUsageLoaded] = useState(false);
 
-  // On popup open: restore snip button state so it stays clicked if overlay is still active
+  const fetchSnipUsage = async () => {
+    try {
+      const u = await getSnipUsage();
+      setSnipUsage({
+        used: typeof u?.used === 'number' ? u.used : 0,
+        limit: typeof u?.limit === 'number' ? u.limit : 25,
+        allowed: u?.allowed === true,
+      });
+    } catch (_) {
+      setSnipUsage((prev) => ({ ...prev, allowed: false }));
+    } finally {
+      setSnipUsageLoaded(true);
+    }
+  };
+
+  const userId = supabaseUser?.id ?? null;
+
+  // On popup open: restore snip overlay state only
   useEffect(() => {
     if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return;
     chrome.runtime.sendMessage({ type: 'GET_SNIP_STATE' }, (response) => {
       if (!chrome.runtime.lastError && response?.active) setSnipActive(true);
     });
   }, []);
+
+  // When user is set or changes (e.g. switch account), sync token to storage then fetch usage for that user
+  useEffect(() => {
+    setSnipUsage({ used: 0, limit: 25, allowed: false });
+    setSnipUsageLoaded(false);
+    if (userId != null && typeof syncSessionTokenToStorage === 'function') {
+      syncSessionTokenToStorage().then(() => fetchSnipUsage());
+    } else {
+      setSnipUsageLoaded(true);
+    }
+  }, [userId, syncSessionTokenToStorage]);
 
   const SNIP_SUCCESS_KEY = 'eznote_snip_insert_success';
 
@@ -38,6 +74,7 @@ export function ConnectedDocument({ documentName, onChangeDocument, disabled = f
       if (changes[SNIP_SUCCESS_KEY] !== undefined && changes[SNIP_SUCCESS_KEY].newValue === true) {
         setSnipSuccess(true);
         storage.remove(SNIP_SUCCESS_KEY);
+        fetchSnipUsage();
         setTimeout(() => setSnipSuccess(false), 2500);
       }
     };
@@ -172,9 +209,21 @@ export function ConnectedDocument({ documentName, onChangeDocument, disabled = f
         setPlugStep(null);
         setPlugSelection(null);
         setPlugSections([]);
+        fetchSnipUsage();
         setTimeout(() => setPlugSuccess(false), 2500);
+      } else if (res?.error === 'snip_limit_reached') {
+        setPlugStep(null);
+        setPlugSelection(null);
+        setPlugSections([]);
+        setPlugError(null);
+        setUpgradeModalLimit(res?.limit ?? 25);
+        setShowUpgradeModal(true);
+        setSnipUsage((prev) => ({ ...prev, allowed: false }));
       } else {
-        setPlugError(res?.error || 'Insert failed');
+        const errMsg = res?.error === 'not_authenticated'
+          ? 'Sign in to your account to use Snip and Plug.'
+          : (res?.error || 'Insert failed');
+        setPlugError(errMsg);
         setPlugStep('sections');
       }
     } catch (e) {
@@ -190,10 +239,18 @@ export function ConnectedDocument({ documentName, onChangeDocument, disabled = f
     setPlugError(null);
   };
 
-  const snipClass = 'connected-doc__btn connected-doc__btn--snip' + (snipActive ? ' connected-doc__btn--snip-active' : '');
+  const snipClass =
+    'connected-doc__btn connected-doc__btn--snip' +
+    (snipActive ? ' connected-doc__btn--snip-active' : '') +
+    (snipUsageLoaded && !snipUsage.allowed ? ' connected-doc__btn--snip-disabled' : '');
 
   return (
     <div className="connected-doc">
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        limit={upgradeModalLimit}
+      />
       <p className="connected-doc__label">Connected document</p>
       <p className="connected-doc__name">{documentName || 'Untitled'}</p>
       {plugStep === null && (
@@ -242,14 +299,22 @@ export function ConnectedDocument({ documentName, onChangeDocument, disabled = f
         <p className="connected-doc__plug-status">Adding…</p>
       )}
       {snipStep === null && (
-        <button
-          type="button"
-          className={snipClass}
-          onClick={handleSnip}
-          disabled={disabled}
-        >
-          Snip and Plug
-        </button>
+        <>
+          <button
+            type="button"
+            className={snipClass}
+            onClick={handleSnip}
+            disabled={disabled || !snipUsage.allowed}
+            title={!snipUsage.allowed ? `Monthly limit reached (${snipUsage.used}/${snipUsage.limit})` : undefined}
+          >
+            Snip and Plug
+          </button>
+          {snipUsageLoaded && !snipUsage.allowed && (
+            <p className="connected-doc__plug-error" role="alert">
+              Monthly limit reached ({snipUsage.used}/{snipUsage.limit}). Upgrade to add more.
+            </p>
+          )}
+        </>
       )}
       {snipStep === 'loading_sections' && (
         <p className="connected-doc__plug-status">Loading sections…</p>

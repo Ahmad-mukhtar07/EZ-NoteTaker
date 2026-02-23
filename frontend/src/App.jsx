@@ -6,8 +6,15 @@ import { ConnectedDocument } from './components/ConnectedDocument';
 import { DocPreview } from './components/DocPreview';
 import { LoginPage } from './components/LoginPage';
 import { useAuth } from './hooks/useAuth';
-import { isSupabaseConfigured } from './config/supabase-config.js';
+import { isSupabaseConfigured, supabaseUrl, supabaseAnonKey } from './config/supabase-config.js';
 import './App.css';
+
+if (isSupabaseConfigured && supabaseUrl && typeof chrome?.storage?.local?.set === 'function') {
+  chrome.storage.local.set({
+    eznote_supabase_url: supabaseUrl,
+    eznote_supabase_anon_key: supabaseAnonKey,
+  });
+}
 
 const STATUS = {
   NOT_CONNECTED: 'not_connected',

@@ -9,6 +9,7 @@ import { ensureResearchSnipsFolder, uploadImageToDrive } from './googleDrive.js'
 import { insertImageWithSource, insertImageWithSourceAtPosition } from './googleDocs.js';
 import { showNotification } from './notifications.js';
 import { tryPasteImageAtCursorInDocTab } from './pasteAtCursor.js';
+import { recordSnipAndCheckLimit } from './snipUsage.js';
 
 const SNIP_OVERLAY_PATH = 'snipOverlay.js';
 const SNIP_INSERT_INDEX_KEY = 'eznote_snip_insert_index';
@@ -98,7 +99,30 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
   const insertIndex = await getSnipInsertIndex();
   await clearSnipInsertIndex();
 
-  const pastedAtCursor = !insertIndex && (await tryPasteImageAtCursorInDocTab(
+  // Try paste-at-cursor first (no Drive upload — no drive link to store).
+  // Check limit first so we never paste without recording.
+  const willTryPaste = !insertIndex;
+  if (willTryPaste) {
+    const usage = await recordSnipAndCheckLimit({
+      content: pageTitle,
+      source_url: '', // paste path: image not uploaded to Drive
+      target_doc_id: documentId,
+    });
+    if (usage.error === 'snip_limit_reached') {
+      await notifyAndRemoveOverlay(tabId, 'Snip limit reached', 'You\'ve reached your monthly limit. Upgrade to add more.');
+      return;
+    }
+    if (usage.error === 'not_authenticated') {
+      await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open the extension and sign in to your account to use Snip and Plug.');
+      return;
+    }
+    if (usage.error) {
+      await notifyAndRemoveOverlay(tabId, 'Snip and Plug failed', usage.error);
+      return;
+    }
+  }
+
+  const pastedAtCursor = willTryPaste && (await tryPasteImageAtCursorInDocTab(
     documentId,
     tabId,
     cropResult.base64,
@@ -113,6 +137,7 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
     return;
   }
 
+  // API path: upload to Drive first so we have the image link for source_url.
   const blob = await fetch(cropResult.base64).then((r) => r.blob());
   const filename = `eznote-snip-${Date.now()}.png`;
   const widthPt = cropResult.width ?? 400;
@@ -129,10 +154,32 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
     timestamp,
   };
 
+  // When willTryPaste we already recorded one slot (paste path); don't record again if we fell through to API path.
+  const alreadyRecorded = willTryPaste;
+
   try {
     await withTokenRetry(async (token) => {
       const folderId = await ensureResearchSnipsFolder(token);
-      const { imageUrl } = await uploadImageToDrive(token, blob, filename, folderId);
+      const { fileId, imageUrl } = await uploadImageToDrive(token, blob, filename, folderId);
+      if (!alreadyRecorded) {
+        const driveLink = fileId ? `https://drive.google.com/file/d/${fileId}/view` : '';
+        const usage = await recordSnipAndCheckLimit({
+          content: pageTitle,
+          source_url: driveLink,
+          target_doc_id: documentId,
+        });
+        if (usage.error === 'snip_limit_reached') {
+          await notifyAndRemoveOverlay(tabId, 'Snip limit reached', 'You\'ve reached your monthly limit. Upgrade to add more.');
+          throw new Error('SNIP_LIMIT_REACHED');
+        }
+        if (usage.error === 'not_authenticated') {
+          await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open the extension and sign in to your account to use Snip and Plug.');
+          throw new Error('NOT_AUTHENTICATED');
+        }
+        if (usage.error) {
+          throw new Error(usage.error);
+        }
+      }
       if (typeof insertIndex === 'number') {
         await insertImageWithSourceAtPosition(documentId, token, { ...imageData, imageUrl }, insertIndex);
       } else {
@@ -143,6 +190,7 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
     showNotification('Snip and Plug', 'Screenshot was added to your Google Doc.');
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    if (msg === 'SNIP_LIMIT_REACHED' || msg === 'NOT_AUTHENTICATED') return; // already notified above
     if (msg.includes('Sign in required')) {
       await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open EZ-NoteTaker and click "Connect Google Docs" to sign in.');
       return;

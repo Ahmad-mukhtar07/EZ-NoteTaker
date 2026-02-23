@@ -8,6 +8,7 @@ import { withTokenRetry } from './auth.js';
 import { insertHighlightToDoc } from './googleDocs.js';
 import { showNotification } from './notifications.js';
 import { buildPlugPlainText, tryPasteAtCursorInDocTab } from './pasteAtCursor.js';
+import { recordSnipAndCheckLimit } from './snipUsage.js';
 
 function friendlyError(err) {
   const msg = err instanceof Error ? err.message : String(err);
@@ -30,6 +31,24 @@ export async function plugHighlightIntoDoc(data, sourceTabId) {
   const documentId = await getSelectedDocumentId();
   if (!documentId) {
     showNotification('No document selected', 'Open the EZ-NoteTaker extension and select a Google Doc to connect.');
+    return;
+  }
+
+  const usage = await recordSnipAndCheckLimit({
+    content: data.selectedText ?? '',
+    source_url: documentId ? `https://docs.google.com/document/d/${documentId}/edit` : '',
+    target_doc_id: documentId,
+  });
+  if (usage.error === 'snip_limit_reached') {
+    showNotification('Snip limit reached', 'You\'ve reached your monthly limit. Upgrade to add more.');
+    return;
+  }
+  if (usage.error === 'not_authenticated') {
+    showNotification('Sign in required', 'Open the extension and sign in to your account to use Snip and Plug.');
+    return;
+  }
+  if (usage.error) {
+    showNotification('Could not plug in', usage.error);
     return;
   }
 
