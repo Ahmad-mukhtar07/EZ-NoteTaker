@@ -29,7 +29,12 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
   const [snipUsageLoaded, setSnipUsageLoaded] = useState(false);
   const [docDropdownOpen, setDocDropdownOpen] = useState(false);
   const [connectedDocs, setConnectedDocs] = useState([]);
+  const [collapsed, setCollapsed] = useState(false);
   const docDropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (collapsed) setDocDropdownOpen(false);
+  }, [collapsed]);
 
   const fetchSnipUsage = async () => {
     try {
@@ -277,7 +282,7 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
   };
 
   return (
-    <div className="connected-doc">
+    <div className={`connected-doc ${collapsed ? 'connected-doc--collapsed' : ''}`}>
       <UpgradeModal
         open={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
@@ -285,50 +290,64 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
       />
       <div className="connected-doc__row">
         <span className="connected-doc__row-label">Active document</span>
-        <div className="connected-doc__dropdown" ref={docDropdownRef}>
-          <button
-            type="button"
-            className="connected-doc__dropdown-trigger"
-            onClick={() => setDocDropdownOpen((open) => !open)}
-            disabled={disabled}
-            aria-expanded={docDropdownOpen}
-            aria-haspopup="listbox"
-            aria-label="Change document"
-          >
-            <span className="connected-doc__dropdown-trigger-text">Change document</span>
-            <span className="connected-doc__dropdown-trigger-icon" aria-hidden>{docDropdownOpen ? '▲' : '▼'}</span>
-          </button>
-        {docDropdownOpen && (
-          <div className="connected-doc__dropdown-panel" role="listbox">
-            {connectedDocs.map((doc) => {
-              const isActive = documentId === doc.google_doc_id;
-              return (
-                <button
-                  key={doc.id}
-                  type="button"
-                  role="option"
-                  aria-selected={isActive}
-                  className={`connected-doc__dropdown-option ${isActive ? 'connected-doc__dropdown-option--active' : ''}`}
-                  onClick={() => handleSelectDoc(doc)}
-                >
-                  {doc.doc_title || 'Untitled'}
-                </button>
-              );
-            })}
+        <div className="connected-doc__row-right">
+          <div className="connected-doc__dropdown" ref={docDropdownRef}>
             <button
               type="button"
-              className="connected-doc__dropdown-add"
-              onClick={() => {
-                setDocDropdownOpen(false);
-                onChangeDocument?.();
-              }}
+              className="connected-doc__dropdown-trigger"
+              onClick={() => setDocDropdownOpen((open) => !open)}
+              disabled={disabled}
+              aria-expanded={docDropdownOpen}
+              aria-haspopup="listbox"
+              aria-label="Change document"
             >
-              + Connect new document
+              <span className="connected-doc__dropdown-trigger-text">Change document</span>
+              <span className="connected-doc__dropdown-trigger-icon" aria-hidden>{docDropdownOpen ? '▲' : '▼'}</span>
             </button>
+          {docDropdownOpen && (
+            <div className="connected-doc__dropdown-panel" role="listbox">
+              {connectedDocs.map((doc) => {
+                const isActive = documentId === doc.google_doc_id;
+                return (
+                  <button
+                    key={doc.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    className={`connected-doc__dropdown-option ${isActive ? 'connected-doc__dropdown-option--active' : ''}`}
+                    onClick={() => handleSelectDoc(doc)}
+                  >
+                    {doc.doc_title || 'Untitled'}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                className="connected-doc__dropdown-add"
+                onClick={() => {
+                  setDocDropdownOpen(false);
+                  onChangeDocument?.();
+                }}
+              >
+                + Connect new document
+              </button>
+            </div>
+          )}
           </div>
-        )}
+          <button
+            type="button"
+            className="connected-doc__collapse"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? 'Expand section' : 'Collapse section'}
+            disabled={disabled}
+          >
+            <span className="connected-doc__collapse-icon" aria-hidden>{collapsed ? '▶' : '▼'}</span>
+          </button>
         </div>
       </div>
+      {!collapsed && (
+        <>
       <p className="connected-doc__name">{documentName || 'Untitled'}</p>
       {plugStep === null && (
         <button
@@ -435,6 +454,8 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
       </button>
       <p className="connected-doc__hint connected-doc__hint--magic">AI-powered cleanup and structure for your doc. Coming soon.</p>
       <p className="connected-doc__hint connected-doc__hint--cursor">Tip: Open your doc in a new tab (below) to add at cursor with Plug it in or Snip and Plug.</p>
+        </>
+      )}
     </div>
   );
 }
