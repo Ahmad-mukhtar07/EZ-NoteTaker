@@ -133,6 +133,15 @@ function App() {
     }
   };
 
+  const handleDocumentRemoved = useCallback(async () => {
+    await setSelectedDoc('', '');
+    setDocumentId(null);
+    setDocumentName(null);
+    setStatus(STATUS.CONNECTED);
+    setShowDocList(true);
+    setShowDocumentManager(false);
+  }, []);
+
   // (1) Unauthenticated → login only
   if (showSupabaseLogin) {
     return <LoginPage />;
@@ -209,6 +218,7 @@ function App() {
                 setDocumentId(doc.id);
                 setDocumentName(doc.name || 'Untitled');
               }}
+              onDocumentRemoved={handleDocumentRemoved}
               disabled={apiLoading}
             />
             <DocPreview documentId={documentId} />
@@ -223,6 +233,7 @@ function App() {
           <DocumentManager
             currentDocumentId={documentId}
             onSelectDocument={handleDocumentSelected}
+            onDocumentRemoved={handleDocumentRemoved}
             onClose={() => setShowDocumentManager(false)}
             disabled={apiLoading}
           />

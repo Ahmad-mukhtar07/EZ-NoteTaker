@@ -133,21 +133,60 @@
   z-index: 50;
 }
 
+.connected-doc__dropdown-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: none;
+  background: #1e293b;
+  transition: background 0.1s;
+}
+
+.connected-doc__dropdown-row.connected-doc__dropdown-option--active {
+  background: rgba(26, 115, 232, 0.4);
+}
+
 .connected-doc__dropdown-option {
+  flex: 1;
   display: block;
   width: 100%;
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
   text-align: left;
   border: none;
-  background: #1e293b;
+  background: transparent;
   color: rgba(255, 255, 255, 0.95);
   cursor: pointer;
   transition: background 0.1s;
 }
 
+.connected-doc__dropdown-row:hover .connected-doc__dropdown-option,
 .connected-doc__dropdown-option:hover {
-  background: #334155;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.connected-doc__dropdown-row.connected-doc__dropdown-option--active .connected-doc__dropdown-option {
+  color: rgba(255, 255, 255, 0.98);
+}
+
+.connected-doc__dropdown-remove {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.1s, background 0.1s;
+}
+
+.connected-doc__dropdown-remove:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(239, 68, 68, 0.3);
 }
 
 .connected-doc__dropdown-option--active {
@@ -441,18 +480,35 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   }
 
-  .connected-doc__dropdown-option {
+  .connected-doc__dropdown-row {
     background: #fff;
+  }
+
+  .connected-doc__dropdown-row.connected-doc__dropdown-option--active {
+    background: rgba(26, 115, 232, 0.12);
+  }
+
+  .connected-doc__dropdown-option {
+    background: transparent;
     color: rgba(0, 0, 0, 0.85);
   }
 
+  .connected-doc__dropdown-row:hover .connected-doc__dropdown-option,
   .connected-doc__dropdown-option:hover {
-    background: #f1f5f9;
+    background: rgba(0, 0, 0, 0.04);
   }
 
-  .connected-doc__dropdown-option--active {
-    background: rgba(26, 115, 232, 0.12);
+  .connected-doc__dropdown-option--active .connected-doc__dropdown-option {
     color: rgba(0, 0, 0, 0.9);
+  }
+
+  .connected-doc__dropdown-remove {
+    color: rgba(0, 0, 0, 0.45);
+  }
+
+  .connected-doc__dropdown-remove:hover:not(:disabled) {
+    color: rgba(0, 0, 0, 0.9);
+    background: rgba(239, 68, 68, 0.15);
   }
 
   .connected-doc__dropdown-add {

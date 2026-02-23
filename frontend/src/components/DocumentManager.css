@@ -38,6 +38,9 @@
 }
 
 .doc-manager__item {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
   margin: 0;
   padding: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -48,11 +51,12 @@
 }
 
 .doc-manager__item-btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  width: 100%;
+  min-width: 0;
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
   text-align: left;
@@ -61,6 +65,24 @@
   color: rgba(255, 255, 255, 0.9);
   cursor: pointer;
   transition: background 0.15s;
+}
+
+.doc-manager__item-remove {
+  flex-shrink: 0;
+  width: 2rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s;
+}
+
+.doc-manager__item-remove:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(239, 68, 68, 0.25);
 }
 
 .doc-manager__item-btn:hover:not(:disabled) {
@@ -165,6 +187,15 @@
   .doc-manager__item-btn--active {
     background: rgba(26, 115, 232, 0.12);
     color: rgba(0, 0, 0, 0.9);
+  }
+
+  .doc-manager__item-remove {
+    color: rgba(0, 0, 0, 0.45);
+  }
+
+  .doc-manager__item-remove:hover:not(:disabled) {
+    color: rgba(0, 0, 0, 0.9);
+    background: rgba(239, 68, 68, 0.15);
   }
 
   .doc-manager__add {

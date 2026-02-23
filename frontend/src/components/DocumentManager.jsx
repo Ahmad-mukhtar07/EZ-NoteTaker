@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getConnectedDocs, addConnectedDoc } from '../lib/connectedDocsService.js';
+import { getConnectedDocs, addConnectedDoc, removeConnectedDoc } from '../lib/connectedDocsService.js';
 import { setSelectedDoc } from '../popup/messages.js';
 import { useFeatureAccess } from '../hooks/useFeatureAccess.js';
 import { DocsList } from './DocsList.jsx';
@@ -13,6 +13,7 @@ import './DocumentManager.css';
 export function DocumentManager({
   currentDocumentId,
   onSelectDocument,
+  onDocumentRemoved,
   onClose,
   disabled = false,
 }) {
@@ -95,6 +96,29 @@ export function DocumentManager({
     setMode('add');
   };
 
+  const handleRemoveDoc = async (e, doc) => {
+    e.stopPropagation();
+    if (disabled) return;
+    try {
+      await removeConnectedDoc(doc.id);
+      const nextList = docs.filter((d) => d.id !== doc.id);
+      setDocs(nextList);
+      const wasActive = currentDocumentId === doc.google_doc_id;
+      if (wasActive) {
+        if (nextList.length > 0) {
+          const next = nextList[0];
+          const res = await setSelectedDoc(next.google_doc_id, next.doc_title);
+          if (res?.success) onSelectDocument?.({ id: next.google_doc_id, name: next.doc_title });
+        } else {
+          onDocumentRemoved?.();
+          onClose?.();
+        }
+      }
+    } catch (_) {
+      loadDocs();
+    }
+  };
+
   if (mode === 'add') {
     return (
       <div className="doc-manager">
@@ -160,6 +184,16 @@ export function DocumentManager({
               >
                 <span className="doc-manager__item-name">{doc.doc_title || 'Untitled'}</span>
                 {isActive && <span className="doc-manager__item-badge">Active</span>}
+              </button>
+              <button
+                type="button"
+                className="doc-manager__item-remove"
+                onClick={(e) => handleRemoveDoc(e, doc)}
+                disabled={disabled}
+                aria-label={`Remove ${doc.doc_title || 'Untitled'} from list`}
+                title="Remove from list"
+              >
+                ×
               </button>
             </li>
           );

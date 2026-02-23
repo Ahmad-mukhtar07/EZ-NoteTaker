@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { getPlugSelection, getDocSections, plugItInAtSection, getSnipUsage, setSelectedDoc } from '../popup/messages.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useFeatureAccess } from '../hooks/useFeatureAccess.js';
-import { getConnectedDocs } from '../lib/connectedDocsService.js';
+import { getConnectedDocs, removeConnectedDoc } from '../lib/connectedDocsService.js';
 import { UpgradeModal } from './UpgradeModal';
 import './ConnectedDocument.css';
 
@@ -10,7 +10,7 @@ import './ConnectedDocument.css';
  * Shows the currently connected document, "Snip and Plug", and "Change document".
  * "Plug it in" opens a section picker to choose where to insert the selected text.
  */
-export function ConnectedDocument({ documentId, documentName, onChangeDocument, onSwitchDocument, disabled = false }) {
+export function ConnectedDocument({ documentId, documentName, onChangeDocument, onSwitchDocument, onDocumentRemoved, disabled = false }) {
   const { user: supabaseUser, syncSessionTokenToStorage } = useAuth();
   const [snipActive, setSnipActive] = useState(false);
   const snipActiveTimer = useRef(null);
@@ -296,6 +296,29 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
     }
   };
 
+  const handleRemoveDoc = async (e, doc) => {
+    e.stopPropagation();
+    if (disabled) return;
+    try {
+      await removeConnectedDoc(doc.id);
+      const nextList = connectedDocs.filter((d) => d.id !== doc.id);
+      setConnectedDocs(nextList);
+      if (documentId === doc.google_doc_id) {
+        if (nextList.length > 0) {
+          const next = nextList[0];
+          const res = await setSelectedDoc(next.google_doc_id, next.doc_title || 'Untitled');
+          if (res?.success) onSwitchDocument?.({ id: next.google_doc_id, name: next.doc_title || 'Untitled' });
+        } else {
+          await setSelectedDoc('', '');
+          onDocumentRemoved?.();
+        }
+      }
+      setDocDropdownOpen(false);
+    } catch (_) {
+      // keep list as-is on error
+    }
+  };
+
   return (
     <div className={`connected-doc ${collapsed ? 'connected-doc--collapsed' : ''}`}>
       <UpgradeModal
@@ -325,16 +348,30 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
               {connectedDocs.map((doc) => {
                 const isActive = documentId === doc.google_doc_id;
                 return (
-                  <button
+                  <div
                     key={doc.id}
-                    type="button"
+                    className={`connected-doc__dropdown-row ${isActive ? 'connected-doc__dropdown-option--active' : ''}`}
                     role="option"
                     aria-selected={isActive}
-                    className={`connected-doc__dropdown-option ${isActive ? 'connected-doc__dropdown-option--active' : ''}`}
-                    onClick={() => handleSelectDoc(doc)}
                   >
-                    {doc.doc_title || 'Untitled'}
-                  </button>
+                    <button
+                      type="button"
+                      className="connected-doc__dropdown-option"
+                      onClick={() => handleSelectDoc(doc)}
+                    >
+                      {doc.doc_title || 'Untitled'}
+                    </button>
+                    <button
+                      type="button"
+                      className="connected-doc__dropdown-remove"
+                      onClick={(e) => handleRemoveDoc(e, doc)}
+                      disabled={disabled}
+                      aria-label={`Remove ${doc.doc_title || 'Untitled'} from list`}
+                      title="Remove from list"
+                    >
+                      ×
+                    </button>
+                  </div>
                 );
               })}
               <button
