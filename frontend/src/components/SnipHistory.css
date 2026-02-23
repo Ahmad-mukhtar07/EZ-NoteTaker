@@ -4,6 +4,49 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.snip-history__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.35rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.85);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.snip-history__header:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.snip-history__header-title {
+  flex: 1;
+}
+
+.snip-history__collapse-icon {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  opacity: 0.85;
+}
+
+.snip-history__content {
+  margin-top: 0.5rem;
+}
+
+.snip-history--collapsed .snip-history__content {
+  display: none;
+}
+
+.snip-history__content[hidden] {
+  display: none !important;
+}
+
 .snip-history__title {
   margin: 0 0 0.5rem;
   font-size: 0.9rem;
@@ -298,6 +341,14 @@
 @media (prefers-color-scheme: light) {
   .snip-history {
     border-top-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .snip-history__header {
+    color: rgba(0, 0, 0, 0.8);
+  }
+
+  .snip-history__header:hover {
+    color: rgba(0, 0, 0, 0.95);
   }
 
   .snip-history__title {

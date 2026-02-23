@@ -21,6 +21,7 @@ function formatTimestamp(createdAt) {
  */
 export function SnipHistory({ documentId, onShowUpgrade, disabled = false }) {
   const { canAccessSnipHistory } = useFeatureAccess();
+  const [collapsed, setCollapsed] = useState(true);
   const [snips, setSnips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -113,24 +114,47 @@ export function SnipHistory({ documentId, onShowUpgrade, disabled = false }) {
 
   if (!canAccessSnipHistory) {
     return (
-      <div className="snip-history snip-history--locked">
-        <h3 className="snip-history__title">Snip History</h3>
-        <p className="snip-history__locked-text">View and reinsert past snips. Upgrade to Pro to unlock.</p>
+      <div className={`snip-history snip-history--locked ${collapsed ? 'snip-history--collapsed' : ''}`}>
         <button
           type="button"
-          className="snip-history__upgrade-btn"
-          onClick={onShowUpgrade}
-          disabled={disabled}
+          className="snip-history__header"
+          onClick={() => setCollapsed((c) => !c)}
+          aria-expanded={!collapsed}
+          aria-controls="snip-history-content-locked"
+          id="snip-history-label-locked"
         >
-          Upgrade to Pro
+          <span className="snip-history__header-title">Snip History</span>
+          <span className="snip-history__collapse-icon" aria-hidden>{collapsed ? '▶' : '▼'}</span>
         </button>
+        <div id="snip-history-content-locked" className="snip-history__content" aria-labelledby="snip-history-label-locked" hidden={collapsed}>
+          <p className="snip-history__locked-text">View and reinsert past snips. Upgrade to Pro to unlock.</p>
+          <button
+            type="button"
+            className="snip-history__upgrade-btn"
+            onClick={onShowUpgrade}
+            disabled={disabled}
+          >
+            Upgrade to Pro
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="snip-history">
-      <h3 className="snip-history__title">Snip History</h3>
+    <div className={`snip-history ${collapsed ? 'snip-history--collapsed' : ''}`}>
+      <button
+        type="button"
+        className="snip-history__header"
+        onClick={() => setCollapsed((c) => !c)}
+        aria-expanded={!collapsed}
+        aria-controls="snip-history-content"
+        id="snip-history-label"
+      >
+        <span className="snip-history__header-title">Snip History</span>
+        <span className="snip-history__collapse-icon" aria-hidden>{collapsed ? '▶' : '▼'}</span>
+      </button>
+      <div id="snip-history-content" className="snip-history__content" aria-labelledby="snip-history-label" hidden={collapsed}>
       <input
         type="search"
         className="snip-history__search"
@@ -230,6 +254,7 @@ export function SnipHistory({ documentId, onShowUpgrade, disabled = false }) {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
