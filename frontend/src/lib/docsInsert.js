@@ -6,6 +6,8 @@
 
 const DOCS_API_BASE = 'https://docs.googleapis.com/v1/documents';
 
+import { getSourcesSectionInfo } from './formatReferences.js';
+
 /** Named range name prefix; full name is SNIP_REF_{uuid} so the doc can be scanned for references. */
 const SNIP_REF_PREFIX = 'SNIP_REF_';
 
@@ -348,7 +350,24 @@ export async function getDocumentSections(documentId, accessToken) {
     sectionEndIndices[sectionEndIndices.length - 1] = Math.max(1, lastContentEnd - 1);
   }
   // Insert index must be strictly less than segment endIndex; use maxEnd - 1 for end of doc.
-  const endOfDocIndex = Math.max(1, maxEnd - 1);
+  let endOfDocIndex = Math.max(1, maxEnd - 1);
+  // If the doc has a Sources section, ensure no insert option places content after it.
+  let sourcesSectionStart = null;
+  try {
+    const info = await getSourcesSectionInfo(documentId, accessToken);
+    if (info.hasSourcesSection && info.sourcesSectionStart != null && info.sourcesSectionStart > 1) {
+      sourcesSectionStart = info.sourcesSectionStart;
+      endOfDocIndex = Math.min(endOfDocIndex, Math.max(1, sourcesSectionStart - 1));
+    }
+  } catch (_) {}
+  if (sourcesSectionStart != null) {
+    const maxInsertIndex = Math.max(1, sourcesSectionStart - 1);
+    for (let i = 0; i < sectionEndIndices.length; i++) {
+      if (sectionEndIndices[i] != null && sectionEndIndices[i] > maxInsertIndex) {
+        sectionEndIndices[i] = maxInsertIndex;
+      }
+    }
+  }
   const sections = [{ label: 'At the beginning', index: 1 }];
   for (let i = 0; i < headingLabels.length; i++) {
     const idx = sectionEndIndices[i] != null ? sectionEndIndices[i] : endOfDocIndex;
@@ -375,11 +394,38 @@ export async function insertHighlightAtPosition(documentId, accessToken, data, i
     title
   );
 
+  // Insert a blank line first so the content is in a new paragraph and doesn't inherit superscript/formatting.
   const requests = [
     {
       insertText: {
         location: { index: insertIndex },
+        text: '\n',
+      },
+    },
+    {
+      insertText: {
+        location: { index: insertIndex + 1 },
         text: fullText,
+      },
+    },
+    {
+      updateTextStyle: {
+        range: { startIndex: insertIndex, endIndex: insertIndex + 1 + fullText.length },
+        textStyle: {
+          baselineOffset: 'NONE',
+          bold: false,
+          italic: false,
+          underline: false,
+          strikethrough: false,
+        },
+        fields: 'baselineOffset,bold,italic,underline,strikethrough',
+      },
+    },
+    {
+      updateParagraphStyle: {
+        range: { startIndex: insertIndex, endIndex: insertIndex + 1 + fullText.length },
+        paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
+        fields: 'namedStyleType',
       },
     },
   ];
@@ -407,7 +453,7 @@ export async function insertHighlightAtPosition(documentId, accessToken, data, i
     throw new Error(message);
   }
 
-  const insertStart = insertIndex;
+  const insertStart = insertIndex + 1; // after the leading \n
   const extraRequests = [];
   if (bulletRanges.length > 0) {
     const first = bulletRanges[0];
@@ -587,7 +633,14 @@ export async function insertImageWithSourceAtPosition(documentId, accessToken, d
 
   const sourceText = '\nSource: ' + title;
 
+  // Insert a blank line first so the content is in a new paragraph and doesn't inherit superscript/formatting.
   const requests = [
+    {
+      insertText: {
+        location: { index: insertIndex },
+        text: '\n',
+      },
+    },
     {
       insertInlineImage: {
         uri: imageUrl,
@@ -595,13 +648,46 @@ export async function insertImageWithSourceAtPosition(documentId, accessToken, d
           width: { magnitude: imageWidthPt, unit: 'PT' },
           height: { magnitude: imageHeightPt, unit: 'PT' },
         },
-        location: { index: insertIndex },
+        location: { index: insertIndex + 1 },
       },
     },
     {
       insertText: {
-        location: { index: insertIndex + 1 },
+        location: { index: insertIndex + 2 },
         text: sourceText,
+      },
+    },
+    {
+      updateTextStyle: {
+        range: { startIndex: insertIndex, endIndex: insertIndex + 1 },
+        textStyle: {
+          baselineOffset: 'NONE',
+          bold: false,
+          italic: false,
+          underline: false,
+          strikethrough: false,
+        },
+        fields: 'baselineOffset,bold,italic,underline,strikethrough',
+      },
+    },
+    {
+      updateTextStyle: {
+        range: { startIndex: insertIndex + 2, endIndex: insertIndex + 2 + sourceText.length },
+        textStyle: {
+          baselineOffset: 'NONE',
+          bold: false,
+          italic: false,
+          underline: false,
+          strikethrough: false,
+        },
+        fields: 'baselineOffset,bold,italic,underline,strikethrough',
+      },
+    },
+    {
+      updateParagraphStyle: {
+        range: { startIndex: insertIndex, endIndex: insertIndex + 2 + sourceText.length },
+        paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
+        fields: 'namedStyleType',
       },
     },
   ];
@@ -629,7 +715,7 @@ export async function insertImageWithSourceAtPosition(documentId, accessToken, d
     throw new Error(message);
   }
 
-  const linkStart = insertIndex + 1 + 9; // after "\nSource: "
+  const linkStart = insertIndex + 2 + 9; // after leading \n and "\nSource: "
   const linkEnd = linkStart + title.length;
   const linkRequests = [
     {
@@ -663,7 +749,7 @@ export async function insertImageWithSourceAtPosition(documentId, accessToken, d
     throw new Error(message);
   }
 
-  const sourceLineStart = insertIndex + 1;
+  const sourceLineStart = insertIndex + 2;
   const sourceLineEnd = sourceLineStart + sourceText.length;
   await createSnipNamedRange(documentId, accessToken, sourceLineStart, sourceLineEnd, snipId);
 }

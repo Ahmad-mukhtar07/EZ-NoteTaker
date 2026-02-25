@@ -118,6 +118,7 @@ export async function getSourcesSectionInfo(documentId, accessToken) {
   const existingEntries = hasSourcesSection && sourcesSectionText ? parseExistingSourcesSection(sourcesSectionText) : [];
   return {
     hasSourcesSection: !!hasSourcesSection,
+    sourcesSectionStart: sourcesSectionStart ?? null,
     sourcesSectionEnd: sourcesSectionEnd ?? null,
     existingEntries,
   };
