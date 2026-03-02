@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { getPlugSelection, getDocSections, plugItInAtSection, getSnipUsage, setSelectedDoc, formatReferences } from '../popup/messages.js';
+import { getPlugSelection, getDocSections, plugItInAtSection, getSnipUsage, setSelectedDoc, formatReferences, getUndoState, undoLastInsert } from '../popup/messages.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useFeatureAccess } from '../hooks/useFeatureAccess.js';
 import { getConnectedDocs, removeConnectedDoc } from '../lib/connectedDocsService.js';
@@ -28,8 +28,8 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
   const [upgradeModalReason, setUpgradeModalReason] = useState('snip_limit');
   const [upgradeModalLimit, setUpgradeModalLimit] = useState(25);
   const { canAccessSnipHistory } = useFeatureAccess();
-  // Block Snip and Plug by default until we've queried usage (then allow only if under limit)
-  const [snipUsage, setSnipUsage] = useState({ used: 0, limit: 25, allowed: false });
+  // Block Snip and Plug only after we've queried usage and user is over limit (allow by default until then)
+  const [snipUsage, setSnipUsage] = useState({ used: 0, limit: 25, allowed: true });
   const [snipUsageLoaded, setSnipUsageLoaded] = useState(false);
   const [docDropdownOpen, setDocDropdownOpen] = useState(false);
   const [connectedDocs, setConnectedDocs] = useState([]);
@@ -38,10 +38,26 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
   const [formatRefLoading, setFormatRefLoading] = useState(false);
   const [formatRefError, setFormatRefError] = useState(null);
   const [formatRefSuccess, setFormatRefSuccess] = useState(null);
+  const [undoAvailable, setUndoAvailable] = useState(false);
+  const [undoLoading, setUndoLoading] = useState(false);
+  const [undoError, setUndoError] = useState(null);
+  const [undoSuccess, setUndoSuccess] = useState(false);
 
   useEffect(() => {
     if (collapsed) setDocDropdownOpen(false);
   }, [collapsed]);
+
+  const refreshUndoState = () => {
+    getUndoState().then((r) => setUndoAvailable(r?.available === true)).catch(() => setUndoAvailable(false));
+  };
+
+  useEffect(() => {
+    if (!documentId) {
+      setUndoAvailable(false);
+      return;
+    }
+    refreshUndoState();
+  }, [documentId]);
 
   const fetchSnipUsage = async () => {
     try {
@@ -70,12 +86,12 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
 
   // When user is set or changes (e.g. switch account), sync token to storage then fetch usage for that user
   useEffect(() => {
-    setSnipUsage({ used: 0, limit: 25, allowed: false });
     setSnipUsageLoaded(false);
     if (userId != null && typeof syncSessionTokenToStorage === 'function') {
       syncSessionTokenToStorage().then(() => fetchSnipUsage());
     } else {
       setSnipUsageLoaded(true);
+      setSnipUsage((prev) => ({ ...prev, allowed: false }));
     }
   }, [userId, syncSessionTokenToStorage]);
 
@@ -139,6 +155,7 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
         setSnipSuccess(true);
         storage.remove(SNIP_SUCCESS_KEY);
         fetchSnipUsage();
+        getUndoState().then((r) => setUndoAvailable(r?.available === true)).catch(() => setUndoAvailable(false));
         setTimeout(() => setSnipSuccess(false), 2500);
       }
       if (changes[SNIP_ERROR_KEY] !== undefined && changes[SNIP_ERROR_KEY].newValue) {
@@ -306,6 +323,7 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
         setPlugSelection(null);
         setPlugSections([]);
         fetchSnipUsage();
+        refreshUndoState();
         setTimeout(() => setPlugSuccess(false), 2500);
       } else if (res?.error === 'snip_limit_reached') {
         setPlugStep(null);
@@ -352,6 +370,29 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
       setFormatRefError(e instanceof Error ? e.message : 'Format failed');
     } finally {
       setFormatRefLoading(false);
+    }
+  };
+
+  const handleUndoLastInsert = async () => {
+    if (!undoAvailable || undoLoading) return;
+    setUndoError(null);
+    setUndoLoading(true);
+    try {
+      const res = await undoLastInsert();
+      if (res?.success) {
+        setUndoAvailable(false);
+        setUndoSuccess(true);
+        setTimeout(() => setUndoSuccess(false), 2000);
+        refreshUndoState();
+      } else {
+        setUndoError(res?.error || 'Undo failed');
+        refreshUndoState();
+      }
+    } catch (e) {
+      setUndoError(e instanceof Error ? e.message : 'Undo failed');
+      refreshUndoState();
+    } finally {
+      setUndoLoading(false);
     }
   };
 
@@ -532,13 +573,15 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
             className={snipClass}
             onClick={handleSnip}
             disabled={disabled || plugStep !== null || !snipUsage.allowed}
-            title={!snipUsage.allowed ? `Monthly limit reached (${snipUsage.used}/${snipUsage.limit})` : plugStep !== null ? 'Wait for Plug it in to finish' : undefined}
+            title={!snipUsage.allowed ? (userId == null ? 'Sign in to use Snip and Plug' : `Monthly limit reached (${snipUsage.used}/${snipUsage.limit})`) : plugStep !== null ? 'Wait for Plug it in to finish' : undefined}
           >
             Snip and Plug
           </button>
           {snipUsageLoaded && !snipUsage.allowed && (
             <p className="connected-doc__plug-error" role="alert">
-              Monthly limit reached ({snipUsage.used}/{snipUsage.limit}). Upgrade to add more.
+              {userId == null
+                ? 'Sign in to use Snip and Plug.'
+                : `Monthly limit reached (${snipUsage.used}/${snipUsage.limit}). Upgrade to add more.`}
             </p>
           )}
         </>
@@ -583,6 +626,21 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
             Cancel
           </button>
         </div>
+      )}
+      <button
+        type="button"
+        className="connected-doc__btn connected-doc__btn--secondary"
+        onClick={handleUndoLastInsert}
+        disabled={disabled || !undoAvailable || undoLoading || !documentId}
+        title={!documentId ? 'Select a document first' : !undoAvailable ? 'No extension insert to undo' : 'Remove the last Plug or Snip insert'}
+      >
+        {undoLoading ? 'Undoing…' : 'Undo Last Insert'}
+      </button>
+      {undoError && (
+        <p className="connected-doc__plug-error" role="alert">{undoError}</p>
+      )}
+      {undoSuccess && (
+        <p className="connected-doc__plug-success">Insert removed.</p>
       )}
       {canAccessSnipHistory && (
         <>

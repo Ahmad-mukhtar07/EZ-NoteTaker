@@ -116,3 +116,19 @@ export async function reinsertImageAtSection(driveUrl, insertIndex, meta = {}) {
     snipId: meta.snipId ?? null,
   });
 }
+
+/**
+ * Whether the last Plug/Snip insert can be undone for the current document.
+ * @returns {Promise<{ available: boolean }>}
+ */
+export async function getUndoState() {
+  return sendMessage({ type: 'GET_UNDO_STATE' });
+}
+
+/**
+ * Undo the last Plug or Snip insert in the current document.
+ * @returns {Promise<{ success: boolean, error?: string }>}
+ */
+export async function undoLastInsert() {
+  return sendMessage({ type: 'UNDO_LAST_INSERT' });
+}

@@ -10,6 +10,7 @@ import {
   insertImageWithSource as insertImageLib,
   insertImageWithSourceAtPosition as insertImageWithSourceAtPositionLib,
   getDocumentSections as getDocumentSectionsLib,
+  deleteInsertRange as deleteInsertRangeLib,
 } from '../lib/docsInsert.js';
 import { formatReferences as formatReferencesLib } from '../lib/formatReferences.js';
 
@@ -87,5 +88,6 @@ export const insertHighlightAtPosition = insertHighlightAtPositionLib;
 export const insertImageWithSource = insertImageLib;
 export const insertImageWithSourceAtPosition = insertImageWithSourceAtPositionLib;
 export const getDocumentSections = getDocumentSectionsLib;
+export const deleteInsertRange = deleteInsertRangeLib;
 export const fetchDocsList = fetchDocsListLib;
 export const formatReferences = formatReferencesLib;

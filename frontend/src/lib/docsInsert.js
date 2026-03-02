@@ -276,6 +276,8 @@ export async function insertHighlightToDoc(documentId, accessToken, data, option
   const sourceLineStart = sourceStart - 9;
   const sourceLineEnd = sourceEnd;
   await createSnipNamedRange(documentId, accessToken, sourceLineStart, sourceLineEnd, snipId);
+
+  return { startIndex: insertStart, endIndex: endAfterInsert, snipId: snipId ?? null };
 }
 
 const HEADING_STYLES = new Set(['HEADING_1', 'HEADING_2', 'HEADING_3', 'HEADING_4', 'HEADING_5', 'HEADING_6', 'TITLE', 'SUBTITLE']);
@@ -520,6 +522,9 @@ export async function insertHighlightAtPosition(documentId, accessToken, data, i
   const sourceLineStart = sourceStart - 9;
   const sourceLineEnd = sourceEnd;
   await createSnipNamedRange(documentId, accessToken, sourceLineStart, sourceLineEnd, snipId);
+
+  const insertEnd = insertIndex + 1 + fullText.length;
+  return { startIndex: insertIndex, endIndex: insertEnd, snipId: snipId ?? null };
 }
 
 /**
@@ -619,6 +624,9 @@ export async function insertImageWithSource(documentId, accessToken, data, optio
   const sourceLineStart = endAfterInsert - sourceLen;
   const sourceLineEnd = endAfterInsert;
   await createSnipNamedRange(documentId, accessToken, sourceLineStart, sourceLineEnd, snipId);
+
+  const insertStart = endAfterInsert - 1 - sourceLen; // image = 1 char
+  return { startIndex: insertStart, endIndex: endAfterInsert, snipId: snipId ?? null };
 }
 
 /**
@@ -752,4 +760,58 @@ export async function insertImageWithSourceAtPosition(documentId, accessToken, d
   const sourceLineStart = insertIndex + 2;
   const sourceLineEnd = sourceLineStart + sourceText.length;
   await createSnipNamedRange(documentId, accessToken, sourceLineStart, sourceLineEnd, snipId);
+
+  const insertEnd = insertIndex + 2 + sourceText.length; // \n + image (1) + sourceText
+  return { startIndex: insertIndex, endIndex: insertEnd, snipId: snipId ?? null };
+}
+
+/**
+ * Delete a range of content (and optional named range SNIP_REF_{snipId}) from a Google Doc.
+ * Used by "Undo Last Insert" to reverse the last Plug/Snip operation.
+ */
+export async function deleteInsertRange(documentId, accessToken, startIndex, endIndex, snipId = null) {
+  if (typeof startIndex !== 'number' || typeof endIndex !== 'number' || startIndex < 0 || endIndex <= startIndex) {
+    return { success: false, error: 'Invalid range' };
+  }
+
+  const requests = [
+    {
+      deleteContentRange: {
+        range: { startIndex, endIndex, segmentId: '' },
+      },
+    },
+  ];
+
+  if (snipId && typeof snipId === 'string') {
+    requests.push({
+      deleteNamedRange: { name: SNIP_REF_PREFIX + snipId },
+    });
+  }
+
+  const batchUrl = `${DOCS_API_BASE}/${documentId}:batchUpdate`;
+  const res = await fetch(batchUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ requests }),
+  });
+
+  if (res.status === 401) {
+    throw new Error('SESSION_EXPIRED');
+  }
+  if (!res.ok) {
+    const body = await res.text();
+    let message = 'Could not remove content. It may have been edited or deleted.';
+    try {
+      const json = JSON.parse(body);
+      if (json.error?.message) message = json.error.message;
+    } catch (_) {
+      if (body) message = body.slice(0, 200) || message;
+    }
+    return { success: false, error: message };
+  }
+
+  return { success: true };
 }

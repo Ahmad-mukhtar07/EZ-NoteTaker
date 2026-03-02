@@ -10,6 +10,7 @@ import { insertImageWithSource, insertImageWithSourceAtPosition } from './google
 import { showNotification } from './notifications.js';
 import { tryPasteImageAtCursorInDocTab } from './pasteAtCursor.js';
 import { recordSnipAndCheckLimit, recordImageSnipAndCheckLimit, getSnipsMetadata } from './snipUsage.js';
+import { pushUndoInsert } from './undoInsertStack.js';
 
 const SNIP_OVERLAY_PATH = 'snipOverlay.js';
 const SNIP_INSERT_INDEX_KEY = 'eznote_snip_insert_index';
@@ -175,7 +176,7 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
   let snipIdForInsert = null;
 
   try {
-    await withTokenRetry(async (token) => {
+    const range = await withTokenRetry(async (token) => {
       const folderId = await ensureResearchSnipsFolder(token);
       const { fileId, imageUrl } = await uploadImageToDrive(token, blob, filename, folderId);
       if (!alreadyRecorded) {
@@ -201,11 +202,12 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
         snipIdForInsert = usage.snip_id ?? null;
       }
       if (typeof insertIndex === 'number') {
-        await insertImageWithSourceAtPosition(documentId, token, { ...imageData, imageUrl, snipId: snipIdForInsert }, insertIndex, { getSnipsMetadata });
+        return await insertImageWithSourceAtPosition(documentId, token, { ...imageData, imageUrl, snipId: snipIdForInsert }, insertIndex, { getSnipsMetadata });
       } else {
-        await insertImageWithSource(documentId, token, { ...imageData, imageUrl, snipId: snipIdForInsert }, { getSnipsMetadata });
+        return await insertImageWithSource(documentId, token, { ...imageData, imageUrl, snipId: snipIdForInsert }, { getSnipsMetadata });
       }
     });
+    pushUndoInsert({ documentId, startIndex: range.startIndex, endIndex: range.endIndex, snipId: range.snipId });
     if (sessionStorage) {
       await sessionStorage.remove(SNIP_INSERT_ERROR_KEY);
       await sessionStorage.set({ [SNIP_INSERT_SUCCESS_KEY]: true });

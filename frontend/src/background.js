@@ -64,6 +64,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     'GET_DOC_PREVIEW',
     'GET_SNIP_USAGE',
     'FORMAT_REFERENCES',
+    'GET_UNDO_STATE',
+    'UNDO_LAST_INSERT',
   ];
   if (hubTypes.includes(msg?.type)) {
     handleMessage(msg, sender)

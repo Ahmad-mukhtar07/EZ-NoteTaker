@@ -12,11 +12,13 @@ import {
   getDocumentSections,
   insertHighlightAtPosition,
   insertImageWithSourceAtPosition,
+  deleteInsertRange,
   formatReferences,
 } from './googleDocs.js';
 import { createNewDoc } from './googleDrive.js';
 import { getSelectionAndPageInfo } from './captureSelection.js';
 import { recordSnipAndCheckLimit, getSnipUsage, getSnipsMetadata } from './snipUsage.js';
+import { pushUndoInsert, popUndoInsert, canUndoInsert } from './undoInsertStack.js';
 import { log } from './logger.js';
 
 /**
@@ -199,9 +201,10 @@ export async function handleMessage(msg, sender) {
         };
       }
       const snipId = usage.snip_id ?? null;
-      await withTokenRetry((token) =>
+      const range = await withTokenRetry((token) =>
         insertHighlightAtPosition(documentId, token, { ...selectionData, snipId }, insertIndex, { getSnipsMetadata })
       );
+      pushUndoInsert({ documentId, startIndex: range.startIndex, endIndex: range.endIndex, snipId });
       return { sendResponse: true, response: { success: true } };
     } catch (err) {
       log.bg.warn('PLUG_IT_IN_AT_SECTION failed', err);
@@ -234,28 +237,16 @@ export async function handleMessage(msg, sender) {
         pageTitle,
         snipId: snipId ?? null,
       };
-      await withTokenRetry((token) =>
+      const range = await withTokenRetry((token) =>
         insertImageWithSourceAtPosition(documentId, token, imageData, insertIndex, { getSnipsMetadata })
       );
+      pushUndoInsert({ documentId, startIndex: range.startIndex, endIndex: range.endIndex, snipId: range.snipId });
       return { sendResponse: true, response: { success: true } };
     } catch (err) {
       log.bg.warn('REINSERT_IMAGE_AT_SECTION failed', err);
       return {
         sendResponse: true,
         response: { success: false, error: err instanceof Error ? err.message : String(err) },
-      };
-    }
-  }
-
-  // --- Snip usage (for disabling Snip and Plug when limit reached) ---
-  if (type === 'GET_SNIP_USAGE') {
-    try {
-      const usage = await getSnipUsage();
-      return { sendResponse: true, response: usage };
-    } catch (err) {
-      return {
-        sendResponse: true,
-        response: { error: err instanceof Error ? err.message : String(err), allowed: true },
       };
     }
   }
@@ -279,6 +270,45 @@ export async function handleMessage(msg, sender) {
           success: false,
           error: err instanceof Error ? err.message : String(err),
         },
+      };
+    }
+  }
+
+  // --- Undo Last Insert ---
+  if (type === 'GET_UNDO_STATE') {
+    const documentId = await getSelectedDocumentId();
+    const available = documentId ? canUndoInsert(documentId) : false;
+    return { sendResponse: true, response: { available } };
+  }
+
+  if (type === 'UNDO_LAST_INSERT') {
+    let entry = null;
+    try {
+      const documentId = await getSelectedDocumentId();
+      if (!documentId) {
+        return { sendResponse: true, response: { success: false, error: 'No document selected' } };
+      }
+      entry = popUndoInsert();
+      if (!entry || entry.documentId !== documentId) {
+        return {
+          sendResponse: true,
+          response: { success: false, error: 'Nothing to undo for this document' },
+        };
+      }
+      const result = await withTokenRetry((token) =>
+        deleteInsertRange(documentId, token, entry.startIndex, entry.endIndex, entry.snipId ?? undefined)
+      );
+      if (result.success === false) {
+        pushUndoInsert(entry);
+        return { sendResponse: true, response: { success: false, error: result.error } };
+      }
+      return { sendResponse: true, response: { success: true } };
+    } catch (err) {
+      log.bg.warn('UNDO_LAST_INSERT failed', err);
+      if (entry) pushUndoInsert(entry);
+      return {
+        sendResponse: true,
+        response: { success: false, error: err instanceof Error ? err.message : String(err) },
       };
     }
   }
