@@ -534,70 +534,102 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
         <>
       <p className="connected-doc__name">{documentName || 'Untitled'}</p>
 
-      {/* Primary actions: add content to doc */}
+      {/* Primary actions: each slot = button + its section picker (when active) */}
       <div className="connected-doc__actions connected-doc__actions--primary">
-        {plugStep === null && (
+        <div className="connected-doc__primary-slot">
           <button
             type="button"
-            className="connected-doc__btn connected-doc__btn--plug"
-            onClick={handlePlugItIn}
-            disabled={disabled || snipStep !== null}
+            className={`connected-doc__btn connected-doc__btn--plug ${plugStep !== null ? 'connected-doc__btn--loading' : ''}`}
+            onClick={plugStep === null ? handlePlugItIn : undefined}
+            disabled={disabled || snipStep !== null || plugStep !== null}
           >
-            Plug it in
+            {(plugStep === 'loading' || plugStep === 'inserting') && (
+              <span className="connected-doc__loader-spinner connected-doc__loader-spinner--inline" aria-hidden />
+            )}
+            {plugStep === 'loading' && <span>Loading…</span>}
+            {plugStep === 'inserting' && <span>Adding…</span>}
+            {plugStep === 'sections' && <span>Choose section…</span>}
+            {plugStep === null && 'Plug it in'}
           </button>
-        )}
-        {snipStep === null && (
-          <button
-            type="button"
-            className={snipClass}
-            onClick={handleSnip}
-            disabled={disabled || plugStep !== null || !snipUsage.allowed}
-            title={!snipUsage.allowed ? (userId == null ? 'Sign in to use Snip and Plug' : `Monthly limit reached (${snipUsage.used}/${snipUsage.limit})`) : plugStep !== null ? 'Wait for Plug it in to finish' : undefined}
-          >
-            Snip and Plug
-          </button>
-        )}
+          {plugStep === 'sections' && (
+            <div className="connected-doc__sections">
+              <p className="connected-doc__sections-label">Choose where to add the selected text:</p>
+              <ul className="connected-doc__sections-list">
+                {plugSections.map((sec) => (
+                  <li key={sec.index}>
+                    <button
+                      type="button"
+                      className="connected-doc__section-btn"
+                      onClick={() => handlePickSection(sec)}
+                      disabled={disabled}
+                    >
+                      {sec.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {plugError && <p className="connected-doc__plug-error" role="alert">{plugError}</p>}
+              <button type="button" className="connected-doc__section-cancel" onClick={handleCancelPlug}>
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="connected-doc__primary-slot">
+          {snipStep === null ? (
+            <button
+              type="button"
+              className={snipClass}
+              onClick={handleSnip}
+              disabled={disabled || plugStep !== null || !snipUsage.allowed}
+              title={!snipUsage.allowed ? (userId == null ? 'Sign in to use Snip and Plug' : `Monthly limit reached (${snipUsage.used}/${snipUsage.limit})`) : plugStep !== null ? 'Wait for Plug it in to finish' : undefined}
+            >
+              Snip and Plug
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={`connected-doc__btn connected-doc__btn--snip connected-doc__btn--loading`}
+              disabled
+            >
+              <span className="connected-doc__loader-spinner connected-doc__loader-spinner--inline" aria-hidden />
+              <span>
+                {snipStep === 'loading_sections' && 'Loading…'}
+                {snipStep === 'inserting' && 'Adding…'}
+                {snipStep === 'sections' && 'Choose section…'}
+              </span>
+            </button>
+          )}
+          {snipStep === 'sections' && (
+            <div className="connected-doc__sections">
+              <p className="connected-doc__sections-label">Choose where to add the screenshot:</p>
+              <ul className="connected-doc__sections-list">
+                {snipSections.map((sec) => (
+                  <li key={sec.index}>
+                    <button
+                      type="button"
+                      className="connected-doc__section-btn"
+                      onClick={() => handlePickSnipSection(sec)}
+                      disabled={disabled}
+                    >
+                      {sec.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {snipError && <p className="connected-doc__plug-error" role="alert">{snipError}</p>}
+              <button type="button" className="connected-doc__section-cancel" onClick={handleCancelSnipSection}>
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       {plugError && plugStep === null && (
         <p className="connected-doc__plug-error" role="alert">{plugError}</p>
       )}
       {plugSuccess && (
         <p className="connected-doc__plug-success">Added to doc!</p>
-      )}
-      {plugStep === 'loading' && (
-        <div className="connected-doc__loader" role="status" aria-live="polite">
-          <span className="connected-doc__loader-spinner" aria-hidden />
-          <p className="connected-doc__loader-text">Loading selection and sections…</p>
-        </div>
-      )}
-      {plugStep === 'sections' && (
-        <div className="connected-doc__sections">
-          <p className="connected-doc__sections-label">Choose where to add the selected text:</p>
-          <ul className="connected-doc__sections-list">
-            {plugSections.map((sec) => (
-              <li key={sec.index}>
-                <button
-                  type="button"
-                  className="connected-doc__section-btn"
-                  onClick={() => handlePickSection(sec)}
-                  disabled={disabled}
-                >
-                  {sec.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-          {plugError && <p className="connected-doc__plug-error" role="alert">{plugError}</p>}
-          <button type="button" className="connected-doc__section-cancel" onClick={handleCancelPlug}>
-            Cancel
-          </button>
-        </div>
-      )}
-      {plugStep === 'inserting' && (
-        <div className="connected-doc__loader" role="status" aria-live="polite">
-          <span className="connected-doc__loader-spinner" aria-hidden />
-          <p className="connected-doc__loader-text">Adding to document…</p>
-        </div>
       )}
       {snipStep === null && (
         <>
@@ -613,48 +645,12 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
           )}
         </>
       )}
-      {snipStep === 'loading_sections' && (
-        <div className="connected-doc__loader" role="status" aria-live="polite">
-          <span className="connected-doc__loader-spinner" aria-hidden />
-          <p className="connected-doc__loader-text">Loading sections…</p>
-        </div>
-      )}
-      {snipStep === 'inserting' && (
-        <div className="connected-doc__loader" role="status" aria-live="polite">
-          <span className="connected-doc__loader-spinner" aria-hidden />
-          <p className="connected-doc__loader-text">Adding screenshot to document…</p>
-        </div>
-      )}
       {snipError && snipStep === null && (
         <p className="connected-doc__plug-error" role="alert">{snipError}</p>
       )}
       {snipSuccess && (
         <p className="connected-doc__plug-success">Screenshot added to doc!</p>
       )}
-      {snipStep === 'sections' && (
-        <div className="connected-doc__sections">
-          <p className="connected-doc__sections-label">Choose where to add the screenshot:</p>
-          <ul className="connected-doc__sections-list">
-            {snipSections.map((sec) => (
-              <li key={sec.index}>
-                <button
-                  type="button"
-                  className="connected-doc__section-btn"
-                  onClick={() => handlePickSnipSection(sec)}
-                  disabled={disabled}
-                >
-                  {sec.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-          {snipError && <p className="connected-doc__plug-error" role="alert">{snipError}</p>}
-          <button type="button" className="connected-doc__section-cancel" onClick={handleCancelSnipSection}>
-            Cancel
-          </button>
-        </div>
-      )}
-
       {/* Secondary actions: document tools */}
       <div className="connected-doc__actions connected-doc__actions--secondary">
         <button

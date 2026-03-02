@@ -237,6 +237,12 @@
   margin-bottom: 0.75rem;
 }
 
+.connected-doc__primary-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .connected-doc__actions--primary .connected-doc__btn {
   flex: none;
   width: 100%;
@@ -454,6 +460,20 @@
   to { transform: rotate(360deg); }
 }
 
+/* Spinner inside primary action buttons (keeps layout stable) */
+.connected-doc__loader-spinner--inline {
+  width: 1rem;
+  height: 1rem;
+  border-width: 2px;
+}
+
+.connected-doc__btn--loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 .connected-doc__loader-text {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.9);
@@ -474,6 +494,11 @@
   margin: 0.5rem 0;
   padding: 0.5rem 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.connected-doc__primary-slot .connected-doc__sections {
+  margin-top: 0;
+  padding-top: 0.4rem;
 }
 
 .connected-doc__sections-label {
