@@ -1,0 +1,35 @@
+.home__title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+}
+
+@media (min-width: 640px) {
+  .home__title {
+    font-size: var(--text-5xl);
+  }
+}
+
+.home__subtitle {
+  margin: 0;
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-muted);
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 640px) {
+  .home__subtitle {
+    font-size: var(--text-xl);
+  }
+}
+
+.home__placeholder {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
