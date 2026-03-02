@@ -20,7 +20,7 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
   const [plugSections, setPlugSections] = useState([]);
   const [plugError, setPlugError] = useState(null);
   const [plugSuccess, setPlugSuccess] = useState(false);
-  const [snipStep, setSnipStep] = useState(null); // null | 'loading_sections' | 'sections'
+  const [snipStep, setSnipStep] = useState(null); // null | 'loading_sections' | 'sections' | 'inserting'
   const [snipSections, setSnipSections] = useState([]);
   const [snipError, setSnipError] = useState(null);
   const [snipSuccess, setSnipSuccess] = useState(false);
@@ -111,33 +111,80 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
   }, [docDropdownOpen]);
 
   const SNIP_SUCCESS_KEY = 'eznote_snip_insert_success';
+  const SNIP_ERROR_KEY = 'eznote_snip_insert_error';
+  const SNIP_INSERTING_KEY = 'eznote_snip_inserting';
+  const snipOverlayClosedTimer = useRef(null);
 
-  // When overlay is closed (complete/cancel/error), background sets state false; keep button in sync. Also show success when snip insert completes.
+  // When overlay is closed (complete/cancel/error), background sets state false; keep button in sync. Clear inserting only on success, error, or explicit cancel (not when overlay closes — it closes as soon as user draws the region).
   useEffect(() => {
     const storage = chrome.storage?.session || chrome.storage?.local;
     if (!storage?.onChanged) return;
     const listener = (changes) => {
-      if (changes['eznote_snip_overlay_active'] !== undefined) setSnipActive(!!changes['eznote_snip_overlay_active'].newValue);
+      if (changes['eznote_snip_overlay_active'] !== undefined) {
+        setSnipActive(!!changes['eznote_snip_overlay_active'].newValue);
+      }
+      if (changes['eznote_snip_cancelled'] !== undefined && changes['eznote_snip_cancelled'].newValue === true) {
+        if (snipOverlayClosedTimer.current) clearTimeout(snipOverlayClosedTimer.current);
+        setSnipStep(null);
+        storage.remove(SNIP_INSERTING_KEY);
+        storage.remove('eznote_snip_cancelled');
+      }
       if (changes[SNIP_SUCCESS_KEY] !== undefined && changes[SNIP_SUCCESS_KEY].newValue === true) {
+        if (snipOverlayClosedTimer.current) {
+          clearTimeout(snipOverlayClosedTimer.current);
+          snipOverlayClosedTimer.current = null;
+        }
+        setSnipStep(null);
+        storage.remove(SNIP_INSERTING_KEY);
         setSnipSuccess(true);
         storage.remove(SNIP_SUCCESS_KEY);
         fetchSnipUsage();
         setTimeout(() => setSnipSuccess(false), 2500);
       }
+      if (changes[SNIP_ERROR_KEY] !== undefined && changes[SNIP_ERROR_KEY].newValue) {
+        const errMsg = changes[SNIP_ERROR_KEY].newValue;
+        if (snipOverlayClosedTimer.current) {
+          clearTimeout(snipOverlayClosedTimer.current);
+          snipOverlayClosedTimer.current = null;
+        }
+        setSnipStep(null);
+        storage.remove(SNIP_INSERTING_KEY);
+        setSnipError(typeof errMsg === 'string' ? errMsg : 'Snip and Plug failed');
+        storage.remove(SNIP_ERROR_KEY);
+      }
     };
     storage.onChanged.addListener(listener);
-    return () => storage.onChanged.removeListener(listener);
+    return () => {
+      storage.onChanged.removeListener(listener);
+      if (snipOverlayClosedTimer.current) clearTimeout(snipOverlayClosedTimer.current);
+    };
   }, []);
 
-  // On popup open: if snip just succeeded (e.g. user had popup closed), show success once
+  // On popup open: if snip just succeeded (e.g. user had popup closed), show success once. Restore inserting state so spinner shows until success/error. Clear inserting when cancelled.
   useEffect(() => {
     const storage = chrome.storage?.session || chrome.storage?.local;
     if (!storage?.get) return;
-    storage.get(SNIP_SUCCESS_KEY, (result) => {
+    storage.get([SNIP_SUCCESS_KEY, SNIP_ERROR_KEY, SNIP_INSERTING_KEY, 'eznote_snip_overlay_active', 'eznote_snip_cancelled'], (result) => {
       if (result?.[SNIP_SUCCESS_KEY] === true) {
+        setSnipStep(null);
+        storage.remove(SNIP_INSERTING_KEY);
         setSnipSuccess(true);
         storage.remove(SNIP_SUCCESS_KEY);
         setTimeout(() => setSnipSuccess(false), 2500);
+      }
+      if (result?.[SNIP_ERROR_KEY]) {
+        setSnipStep(null);
+        storage.remove(SNIP_INSERTING_KEY);
+        setSnipError(typeof result[SNIP_ERROR_KEY] === 'string' ? result[SNIP_ERROR_KEY] : 'Snip and Plug failed');
+        storage.remove(SNIP_ERROR_KEY);
+      }
+      if (result?.['eznote_snip_cancelled'] === true) {
+        setSnipStep(null);
+        storage.remove(SNIP_INSERTING_KEY);
+        storage.remove('eznote_snip_cancelled');
+      }
+      if (result?.[SNIP_INSERTING_KEY] === true && result?.[SNIP_SUCCESS_KEY] !== true && !result?.[SNIP_ERROR_KEY] && !result?.['eznote_snip_cancelled']) {
+        setSnipStep('inserting');
       }
     });
   }, []);
@@ -194,8 +241,10 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
             setSnipStep('sections');
             return;
           }
-          setSnipStep(null);
+          setSnipStep('inserting');
           setSnipSections([]);
+          const storage = chrome.storage?.session || chrome.storage?.local;
+          if (storage) storage.set({ [SNIP_INSERTING_KEY]: true });
         }
       );
     });
@@ -430,19 +479,22 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
           type="button"
           className="connected-doc__btn connected-doc__btn--plug"
           onClick={handlePlugItIn}
-          disabled={disabled}
+          disabled={disabled || snipStep !== null}
         >
           Plug it in
         </button>
-      )}
-      {plugStep === 'loading' && (
-        <p className="connected-doc__plug-status">Loading… Select text on the page first.</p>
       )}
       {plugError && plugStep === null && (
         <p className="connected-doc__plug-error" role="alert">{plugError}</p>
       )}
       {plugSuccess && (
         <p className="connected-doc__plug-success">Added to doc!</p>
+      )}
+      {plugStep === 'loading' && (
+        <div className="connected-doc__loader" role="status" aria-live="polite">
+          <span className="connected-doc__loader-spinner" aria-hidden />
+          <p className="connected-doc__loader-text">Loading selection and sections…</p>
+        </div>
       )}
       {plugStep === 'sections' && (
         <div className="connected-doc__sections">
@@ -468,7 +520,10 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
         </div>
       )}
       {plugStep === 'inserting' && (
-        <p className="connected-doc__plug-status">Adding…</p>
+        <div className="connected-doc__loader" role="status" aria-live="polite">
+          <span className="connected-doc__loader-spinner" aria-hidden />
+          <p className="connected-doc__loader-text">Adding to document…</p>
+        </div>
       )}
       {snipStep === null && (
         <>
@@ -476,8 +531,8 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
             type="button"
             className={snipClass}
             onClick={handleSnip}
-            disabled={disabled || !snipUsage.allowed}
-            title={!snipUsage.allowed ? `Monthly limit reached (${snipUsage.used}/${snipUsage.limit})` : undefined}
+            disabled={disabled || plugStep !== null || !snipUsage.allowed}
+            title={!snipUsage.allowed ? `Monthly limit reached (${snipUsage.used}/${snipUsage.limit})` : plugStep !== null ? 'Wait for Plug it in to finish' : undefined}
           >
             Snip and Plug
           </button>
@@ -489,7 +544,16 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
         </>
       )}
       {snipStep === 'loading_sections' && (
-        <p className="connected-doc__plug-status">Loading sections…</p>
+        <div className="connected-doc__loader" role="status" aria-live="polite">
+          <span className="connected-doc__loader-spinner" aria-hidden />
+          <p className="connected-doc__loader-text">Loading sections…</p>
+        </div>
+      )}
+      {snipStep === 'inserting' && (
+        <div className="connected-doc__loader" role="status" aria-live="polite">
+          <span className="connected-doc__loader-spinner" aria-hidden />
+          <p className="connected-doc__loader-text">Adding screenshot to document…</p>
+        </div>
       )}
       {snipError && snipStep === null && (
         <p className="connected-doc__plug-error" role="alert">{snipError}</p>

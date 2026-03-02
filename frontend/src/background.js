@@ -122,6 +122,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'SNIP_CANCEL') {
     setSnipOverlayActive(false);
     clearSnipInsertIndex();
+    const st = chrome.storage?.session || chrome.storage?.local;
+    if (st) st.set({ eznote_snip_cancelled: true });
     sendResponse({ ok: true });
     return true;
   }

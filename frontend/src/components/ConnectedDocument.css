@@ -312,6 +312,18 @@
   border-color: rgba(255, 255, 255, 0.5);
 }
 
+.connected-doc__btn--plug:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.connected-doc__btn--plug:disabled:hover {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 .connected-doc__btn--plug:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.7);
   outline-offset: 2px;
@@ -358,6 +370,38 @@
   font-size: 0.85rem;
   margin: 0.5rem 0;
   color: rgba(255, 255, 255, 0.8);
+}
+
+/* Pinning loader: spinner + message while plug/snip is in progress */
+.connected-doc__loader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  margin: 0.5rem 0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.connected-doc__loader-spinner {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  animation: connected-doc__spin 0.7s linear infinite;
+}
+
+@keyframes connected-doc__spin {
+  to { transform: rotate(360deg); }
+}
+
+.connected-doc__loader-text {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
 }
 
 .connected-doc__plug-success {
@@ -568,6 +612,18 @@
     border-color: rgba(0, 0, 0, 0.4);
   }
 
+  .connected-doc__btn--plug:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    color: rgba(0, 0, 0, 0.45);
+    border-color: rgba(0, 0, 0, 0.15);
+  }
+
+  .connected-doc__btn--plug:disabled:hover {
+    background: transparent;
+    border-color: rgba(0, 0, 0, 0.15);
+  }
+
   .connected-doc__btn--plug:focus-visible {
     outline: 2px solid #1a73e8;
     outline-offset: 2px;
@@ -599,6 +655,20 @@
   .connected-doc__plug-status,
   .connected-doc__plug-success {
     color: rgba(0, 0, 0, 0.75);
+  }
+
+  .connected-doc__loader {
+    background: rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+
+  .connected-doc__loader-spinner {
+    border-color: rgba(0, 0, 0, 0.15);
+    border-top-color: rgba(0, 0, 0, 0.7);
+  }
+
+  .connected-doc__loader-text {
+    color: rgba(0, 0, 0, 0.8);
   }
 
   .connected-doc__plug-success {

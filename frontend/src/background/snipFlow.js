@@ -14,6 +14,7 @@ import { recordSnipAndCheckLimit, recordImageSnipAndCheckLimit, getSnipsMetadata
 const SNIP_OVERLAY_PATH = 'snipOverlay.js';
 const SNIP_INSERT_INDEX_KEY = 'eznote_snip_insert_index';
 const SNIP_INSERT_SUCCESS_KEY = 'eznote_snip_insert_success';
+const SNIP_INSERT_ERROR_KEY = 'eznote_snip_insert_error';
 const sessionStorage = chrome.storage?.session || chrome.storage?.local;
 
 export async function getSnipInsertIndex() {
@@ -33,7 +34,8 @@ export function clearSnipInsertIndex() {
   return sessionStorage.remove(SNIP_INSERT_INDEX_KEY);
 }
 
-async function notifyAndRemoveOverlay(tabId, title, message) {
+async function notifyAndRemoveOverlay(tabId, title, message, isError = false) {
+  if (isError && sessionStorage) await sessionStorage.set({ [SNIP_INSERT_ERROR_KEY]: message });
   showNotification(title, message);
   try {
     await chrome.tabs.sendMessage(tabId, { type: 'REMOVE_SNIP_OVERLAY' });
@@ -57,7 +59,7 @@ function userFriendlyInsertError(message) {
 export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo = {}) {
   const documentId = await getSelectedDocumentId();
   if (!documentId) {
-    await notifyAndRemoveOverlay(tabId, 'No document selected', 'Open EZ-NoteTaker and select a Google Doc to connect.');
+    await notifyAndRemoveOverlay(tabId, 'No document selected', 'Open EZ-NoteTaker and select a Google Doc to connect.', true);
     return;
   }
 
@@ -70,7 +72,7 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
   try {
     dataUrl = await chrome.tabs.captureVisibleTab(windowId ?? undefined, { format: 'png' });
   } catch (err) {
-    await notifyAndRemoveOverlay(tabId, 'Capture failed', err?.message || 'Could not capture the tab. Try again.');
+    await notifyAndRemoveOverlay(tabId, 'Capture failed', err?.message || 'Could not capture the tab. Try again.', true);
     return;
   }
 
@@ -78,16 +80,16 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
   try {
     cropResult = await chrome.tabs.sendMessage(tabId, { type: 'CROP_IMAGE', dataUrl, bounds });
   } catch (err) {
-    await notifyAndRemoveOverlay(tabId, 'Snip failed', 'Could not process selection. Try again.');
+    await notifyAndRemoveOverlay(tabId, 'Snip failed', 'Could not process selection. Try again.', true);
     return;
   }
 
   if (cropResult?.type === 'SNIP_ERROR') {
-    await notifyAndRemoveOverlay(tabId, 'Snip failed', cropResult.error || 'Crop failed.');
+    await notifyAndRemoveOverlay(tabId, 'Snip failed', cropResult.error || 'Crop failed.', true);
     return;
   }
   if (cropResult?.type !== 'CROPPED_IMAGE' || !cropResult.base64) {
-    await notifyAndRemoveOverlay(tabId, 'Snip failed', 'No image data received.');
+    await notifyAndRemoveOverlay(tabId, 'Snip failed', 'No image data received.', true);
     return;
   }
 
@@ -118,15 +120,15 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
       target_doc_id: documentId,
     });
     if (usage.error === 'snip_limit_reached') {
-      await notifyAndRemoveOverlay(tabId, 'Snip limit reached', 'You\'ve reached your monthly limit. Upgrade to add more.');
+      await notifyAndRemoveOverlay(tabId, 'Snip limit reached', 'You\'ve reached your monthly limit. Upgrade to add more.', true);
       return;
     }
     if (usage.error === 'not_authenticated') {
-      await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open the extension and sign in to your account to use Snip and Plug.');
+      await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open the extension and sign in to your account to use Snip and Plug.', true);
       return;
     }
     if (usage.error) {
-      await notifyAndRemoveOverlay(tabId, 'Snip and Plug failed', usage.error);
+      await notifyAndRemoveOverlay(tabId, 'Snip and Plug failed', usage.error, true);
       return;
     }
     const snipId = usage.snip_id ?? null;
@@ -143,7 +145,10 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
     try {
       await chrome.tabs.sendMessage(tabId, { type: 'REMOVE_SNIP_OVERLAY' });
     } catch (_) {}
-    if (sessionStorage) await sessionStorage.set({ [SNIP_INSERT_SUCCESS_KEY]: true });
+    if (sessionStorage) {
+      await sessionStorage.remove(SNIP_INSERT_ERROR_KEY);
+      await sessionStorage.set({ [SNIP_INSERT_SUCCESS_KEY]: true });
+    }
     showNotification('Snip and Plug', 'Screenshot added at cursor in your open doc.');
     return;
   }
@@ -183,11 +188,11 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
           target_doc_id: documentId,
         });
         if (usage.error === 'snip_limit_reached') {
-          await notifyAndRemoveOverlay(tabId, 'Snip limit reached', 'You\'ve reached your monthly limit. Upgrade to add more.');
+          await notifyAndRemoveOverlay(tabId, 'Snip limit reached', 'You\'ve reached your monthly limit. Upgrade to add more.', true);
           throw new Error('SNIP_LIMIT_REACHED');
         }
         if (usage.error === 'not_authenticated') {
-          await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open the extension and sign in to your account to use Snip and Plug.');
+          await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open the extension and sign in to your account to use Snip and Plug.', true);
           throw new Error('NOT_AUTHENTICATED');
         }
         if (usage.error) {
@@ -201,16 +206,19 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
         await insertImageWithSource(documentId, token, { ...imageData, imageUrl, snipId: snipIdForInsert }, { getSnipsMetadata });
       }
     });
-    if (sessionStorage) await sessionStorage.set({ [SNIP_INSERT_SUCCESS_KEY]: true });
+    if (sessionStorage) {
+      await sessionStorage.remove(SNIP_INSERT_ERROR_KEY);
+      await sessionStorage.set({ [SNIP_INSERT_SUCCESS_KEY]: true });
+    }
     showNotification('Snip and Plug', 'Screenshot was added to your Google Doc.');
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg === 'SNIP_LIMIT_REACHED' || msg === 'NOT_AUTHENTICATED') return; // already notified above
     if (msg.includes('Sign in required')) {
-      await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open EZ-NoteTaker and click "Connect Google Docs" to sign in.');
+      await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open EZ-NoteTaker and click "Connect Google Docs" to sign in.', true);
       return;
     }
-    await notifyAndRemoveOverlay(tabId, 'Snip and Plug failed', userFriendlyInsertError(msg));
+    await notifyAndRemoveOverlay(tabId, 'Snip and Plug failed', userFriendlyInsertError(msg), true);
   }
 }
 
