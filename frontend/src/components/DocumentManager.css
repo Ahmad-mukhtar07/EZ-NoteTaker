@@ -6,12 +6,12 @@
 .doc-manager--loading,
 .doc-manager--error {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: #cbd5e1;
   padding: 0.5rem 0;
 }
 
 .doc-manager--error {
-  color: #fca5a5;
+  color: #f87171;
 }
 
 .doc-manager--error p {
@@ -22,7 +22,7 @@
   font-size: 0.85rem;
   font-weight: 500;
   margin: 0 0 0.5rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #e2e8f0;
 }
 
 .doc-manager__list {
@@ -32,9 +32,9 @@
   min-height: 80px;
   max-height: min(35vh, 280px);
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(30, 41, 59, 0.6);
 }
 
 .doc-manager__item {
@@ -43,7 +43,7 @@
   gap: 0;
   margin: 0;
   padding: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.15);
 }
 
 .doc-manager__item:last-child {
@@ -62,7 +62,7 @@
   text-align: left;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.9);
+  color: #e2e8f0;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -73,7 +73,7 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.45);
+  color: #94a3b8;
   font-size: 1.15rem;
   line-height: 1;
   cursor: pointer;
@@ -81,17 +81,17 @@
 }
 
 .doc-manager__item-remove:hover:not(:disabled) {
-  color: rgba(255, 255, 255, 0.95);
+  color: #f1f5f9;
   background: rgba(239, 68, 68, 0.25);
 }
 
 .doc-manager__item-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(59, 130, 246, 0.1);
 }
 
 .doc-manager__item-btn--active {
-  background: rgba(26, 115, 232, 0.2);
-  color: rgba(255, 255, 255, 0.98);
+  background: rgba(26, 115, 232, 0.25);
+  color: #f1f5f9;
 }
 
 .doc-manager__item-name {
@@ -108,7 +108,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.85);
+  color: #cbd5e1;
 }
 
 .doc-manager__add {
@@ -118,16 +118,16 @@
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
   font-weight: 500;
-  border: 1px dashed rgba(255, 255, 255, 0.35);
+  border: 1px dashed rgba(59, 130, 246, 0.45);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.95);
+  background: rgba(59, 130, 246, 0.08);
+  color: #e2e8f0;
   cursor: pointer;
 }
 
 .doc-manager__add:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.6);
 }
 
 .doc-manager__back,
@@ -135,10 +135,10 @@
 .doc-manager__retry {
   padding: 0.35rem 0.6rem;
   font-size: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.35);
   border-radius: 6px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.8);
+  color: #94a3b8;
   cursor: pointer;
   margin-right: 0.5rem;
   margin-top: 0.25rem;
@@ -147,7 +147,8 @@
 .doc-manager__back:hover:not(:disabled),
 .doc-manager__cancel:hover:not(:disabled),
 .doc-manager__retry:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(59, 130, 246, 0.1);
+  color: #e2e8f0;
 }
 
 .doc-manager__back {

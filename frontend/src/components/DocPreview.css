@@ -2,15 +2,15 @@
   margin: 0.75rem 0;
   padding: 0.75rem;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .doc-preview__section-label {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.5);
+  color: #94a3b8;
   margin: 0 0 0.4rem;
 }
 
@@ -20,14 +20,14 @@
   gap: 0;
   border-radius: 8px;
   padding: 2px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.25);
 }
 
 .doc-preview__toggle-divider {
   width: 1px;
   height: 1rem;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(59, 130, 246, 0.35);
   flex-shrink: 0;
 }
 
@@ -37,29 +37,29 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.75);
+  color: #94a3b8;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 
 .doc-preview__toggle:hover {
-  color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  background: rgba(59, 130, 246, 0.1);
 }
 
 .doc-preview__toggle--active {
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 1);
+  background: rgba(59, 130, 246, 0.2);
+  color: #f1f5f9;
   font-weight: 500;
 }
 
 .doc-preview__toggle--active:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(59, 130, 246, 0.25);
 }
 
 .doc-preview__img-placeholder {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: #94a3b8;
   font-family: ui-monospace, monospace;
 }
 
@@ -78,33 +78,33 @@
   width: 100%;
   min-height: 320px;
   height: min(65vh, 520px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(15, 23, 42, 0.5);
 }
 
 .doc-preview__live-hint {
   font-size: 0.72rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: #94a3b8;
   margin: 0;
   line-height: 1.35;
 }
 
 .doc-preview__live-hint strong {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.65);
+  color: #cbd5e1;
 }
 
 .doc-preview__loading {
   margin: 0.5rem 0;
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: #cbd5e1;
 }
 
 .doc-preview__error {
   margin: 0.5rem 0;
   font-size: 0.9rem;
-  color: rgba(255, 200, 100, 0.95);
+  color: #fbbf24;
 }
 
 .doc-preview__error p {
@@ -115,9 +115,9 @@
   font-size: 0.8rem;
   padding: 0.25rem 0.5rem;
   background: rgba(26, 115, 232, 0.25);
-  border: 1px solid rgba(26, 115, 232, 0.5);
+  border: 1px solid rgba(59, 130, 246, 0.5);
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.95);
+  color: #e2e8f0;
   cursor: pointer;
 }
 
