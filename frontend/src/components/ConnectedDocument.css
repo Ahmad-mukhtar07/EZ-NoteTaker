@@ -287,6 +287,49 @@
   outline-offset: 2px;
 }
 
+/* Custom tooltip for Format References (Pro) — appears quickly on hover, no browser delay */
+.connected-doc__btn-tooltip-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.connected-doc__btn-tooltip-wrap .connected-doc__btn {
+  width: 100%;
+}
+
+.connected-doc__tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-0.25rem);
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.08s ease-out;
+  z-index: 10;
+}
+
+.connected-doc__btn-tooltip-wrap:hover .connected-doc__tooltip {
+  opacity: 1;
+}
+
+/* Snip tooltip can be longer; allow wrap and max-width */
+.connected-doc__tooltip--snip {
+  white-space: normal;
+  max-width: 14rem;
+  text-align: center;
+}
+
+/* Full-width tooltip wrap in primary slot so button layout is unchanged */
+.connected-doc__primary-slot .connected-doc__btn-tooltip-wrap {
+  width: 100%;
+}
+
 /* Unclicked: bright blue */
 .connected-doc__btn--snip {
   background: #1a73e8;

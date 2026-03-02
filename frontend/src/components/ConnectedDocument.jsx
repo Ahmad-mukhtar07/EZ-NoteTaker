@@ -27,7 +27,7 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeModalReason, setUpgradeModalReason] = useState('snip_limit');
   const [upgradeModalLimit, setUpgradeModalLimit] = useState(25);
-  const { canAccessSnipHistory } = useFeatureAccess();
+  const { canAccessSnipHistory, canUseUnlimitedSnips } = useFeatureAccess();
   // Block Snip and Plug only after we've queried usage and user is over limit (allow by default until then)
   const [snipUsage, setSnipUsage] = useState({ used: 0, limit: 25, allowed: true });
   const [snipUsageLoaded, setSnipUsageLoaded] = useState(false);
@@ -577,15 +577,37 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
         </div>
         <div className="connected-doc__primary-slot">
           {snipStep === null ? (
-            <button
-              type="button"
-              className={snipClass}
-              onClick={handleSnip}
-              disabled={disabled || plugStep !== null || !snipUsage.allowed}
-              title={!snipUsage.allowed ? (userId == null ? 'Sign in to use Snip and Plug' : `Monthly limit reached (${snipUsage.used}/${snipUsage.limit})`) : plugStep !== null ? 'Wait for Plug it in to finish' : undefined}
-            >
-              Snip and Plug
-            </button>
+            <span className="connected-doc__btn-tooltip-wrap">
+              <button
+                type="button"
+                className={snipClass}
+                onClick={handleSnip}
+                disabled={disabled || plugStep !== null || !snipUsage.allowed}
+                title={
+                  !snipUsage.allowed
+                    ? (userId == null ? 'Sign in to use Snip and Plug' : undefined)
+                    : plugStep !== null
+                      ? 'Wait for Plug it in to finish'
+                      : undefined
+                }
+                aria-label={
+                  !canUseUnlimitedSnips && snipUsageLoaded
+                    ? `Snip and Plug. ${snipUsage.allowed ? `${snipUsage.used} of ${snipUsage.limit} snips used this month` : `Monthly limit reached (${snipUsage.used}/${snipUsage.limit})`}`
+                    : undefined
+                }
+              >
+                Snip and Plug
+              </button>
+              {!canUseUnlimitedSnips && snipUsageLoaded && (
+                <span className="connected-doc__tooltip connected-doc__tooltip--snip" role="tooltip">
+                  {userId == null
+                    ? 'Sign in to use Snip and Plug'
+                    : snipUsage.allowed
+                      ? `${snipUsage.used} of ${snipUsage.limit} snips used this month`
+                      : `Monthly limit reached (${snipUsage.used}/${snipUsage.limit})`}
+                </span>
+              )}
+            </span>
           ) : (
             <button
               type="button"
@@ -662,17 +684,29 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
         >
           {undoLoading ? 'Undoing…' : 'Undo Last Insert'}
         </button>
-        {canAccessSnipHistory && (
+        <span className="connected-doc__btn-tooltip-wrap">
           <button
             type="button"
             className="connected-doc__btn connected-doc__btn--tool"
             onClick={handleFormatReferences}
-            disabled={disabled || formatRefLoading || !documentId}
-            title={!documentId ? 'Select a document first' : 'Replace inline sources with superscript numbers and add a Sources list at the bottom'}
+            disabled={disabled || formatRefLoading || !documentId || !canAccessSnipHistory}
+            title={
+              !canAccessSnipHistory
+                ? undefined
+                : !documentId
+                  ? 'Select a document first'
+                  : 'Replace inline sources with superscript numbers and add a Sources list at the bottom'
+            }
+            aria-label={!canAccessSnipHistory ? 'Format References (Available for Pro users)' : undefined}
           >
             {formatRefLoading ? 'Formatting…' : 'Format References'}
           </button>
-        )}
+          {!canAccessSnipHistory && (
+            <span className="connected-doc__tooltip" role="tooltip">
+              Available for Pro users
+            </span>
+          )}
+        </span>
       </div>
       {undoError && (
         <p className="connected-doc__plug-error" role="alert">{undoError}</p>
