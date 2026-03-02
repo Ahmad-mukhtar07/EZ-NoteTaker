@@ -176,12 +176,6 @@ function App() {
 
   const hasSelectedDoc = status === STATUS.DOCUMENT_SELECTED && !showDocList && !showDocumentManager;
   const isConnected = status !== STATUS.NOT_CONNECTED;
-  const statusLabel =
-    status === STATUS.DOCUMENT_SELECTED
-      ? 'Document Selected'
-      : status === STATUS.CONNECTED
-        ? 'Connected'
-        : 'Not Connected';
 
   return (
     <div className="app app--popup">
@@ -197,10 +191,6 @@ function App() {
             <h1 className="app__title">DocSourced</h1>
             <p className="app__tagline">Capture fast. Format clean. Reference intelligently.</p>
           </div>
-          <span className="app__status" role="status" aria-live="polite">
-            <span className={`app__status-dot app__status-dot--${status === STATUS.NOT_CONNECTED ? 'off' : 'on'}`} />
-            {statusLabel}
-          </span>
         </div>
         <div className="app__header-actions">
           {isSupabaseConfigured && supabaseUser && (
