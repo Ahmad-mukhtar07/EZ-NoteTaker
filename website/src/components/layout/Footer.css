@@ -2,7 +2,7 @@
 
 .footer {
   margin-top: auto;
-  background: var(--color-neutral-100);
+  background: var(--color-bg-elevated);
   border-top: 1px solid var(--color-border);
   padding: var(--space-6) 0 var(--space-5);
 }
@@ -139,7 +139,7 @@
 
 .footer__social-link:hover {
   color: var(--color-accent);
-  background: var(--color-neutral-200);
+  background: var(--color-bg-card);
 }
 
 .footer__social-icon {

@@ -92,13 +92,13 @@
   width: fit-content;
 }
 .pricing-section__card-wrap--pro .pricing-section__card {
-  border-color: var(--color-accent-200);
-  box-shadow: 0 0 0 1px var(--color-accent-100), var(--shadow-md);
+  border-color: var(--color-accent-400);
+  box-shadow: 0 0 0 1px var(--color-accent-120), var(--shadow-md);
 }
 
 .pricing-section__card-wrap--pro .pricing-section__card:hover {
-  border-color: var(--color-accent-300);
-  box-shadow: 0 0 0 1px var(--color-accent-200), 0 8px 20px rgba(13, 148, 136, 0.12);
+  border-color: var(--color-accent-200);
+  box-shadow: 0 0 0 1px var(--color-accent-300), var(--shadow-card-hover);
 }
 
 @media (min-width: 768px) {

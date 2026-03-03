@@ -67,7 +67,7 @@
 }
 
 .navbar__toggle:hover {
-  background: var(--color-neutral-100);
+  background: var(--color-bg-card);
 }
 
 .navbar__toggle:focus-visible {
@@ -164,13 +164,13 @@
 
 .navbar__link:hover {
   color: var(--color-text);
-  background: var(--color-neutral-100);
+  background: var(--color-bg-card);
   text-decoration: none;
 }
 
 @media (min-width: 1024px) {
   .navbar__link:hover {
-    background: var(--color-neutral-100);
+    background: var(--color-bg-card);
   }
 }
 
@@ -250,14 +250,14 @@
 }
 
 .navbar__btn--primary {
-  background: var(--color-accent);
+  background: var(--color-primary);
   color: var(--color-accent-contrast);
-  border-color: var(--color-accent);
+  border-color: var(--color-primary);
 }
 
 .navbar__btn--primary:hover {
-  background: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
   color: var(--color-accent-contrast);
 }
 
@@ -268,7 +268,7 @@
 }
 
 .navbar__btn--secondary:hover {
-  background: var(--color-neutral-100);
-  border-color: var(--color-neutral-300);
+  background: var(--color-bg-card);
+  border-color: var(--color-border-strong);
   color: var(--color-text);
 }

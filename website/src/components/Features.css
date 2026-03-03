@@ -63,11 +63,13 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
 }
 
 .features__card:hover {
-  box-shadow: var(--shadow-md);
+  background: var(--color-bg-card-hover);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-card-hover);
 }
 
 @media (min-width: 1024px) {
@@ -76,15 +78,16 @@
   }
 }
 
-/* Pro emphasis: accent border + tint */
+/* Pro emphasis: accent border + subtle blue tint at top (no white/silver) */
 .features__card--pro {
-  border-color: var(--color-accent-200);
-  background: linear-gradient(180deg, var(--color-accent-50) 0%, var(--color-bg-elevated) 20%);
+  border-color: #60a5fa;
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.14) 0%, var(--color-bg-elevated) 22%);
 }
 
 .features__card--pro:hover {
-  border-color: var(--color-accent-300);
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.12);
+  border-color: var(--color-accent-200);
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.2) 0%, var(--color-bg-card-hover) 22%);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.45);
 }
 
 /* Badge */
@@ -102,8 +105,8 @@
 }
 
 .features__badge--free {
-  background: var(--color-neutral-200);
-  color: var(--color-neutral-700);
+  background: var(--color-bg-card);
+  color: var(--color-text-muted);
 }
 
 .features__badge--pro {

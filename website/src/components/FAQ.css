@@ -44,7 +44,7 @@
   margin-bottom: var(--space-3);
   overflow: hidden;
   background: var(--color-bg-elevated);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .faq-section__item:last-child {
@@ -52,7 +52,9 @@
 }
 
 .faq-section__item:hover {
-  border-color: var(--color-neutral-300);
+  background: var(--color-bg-card-hover);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .faq-section__item--open {
