@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useScrollSpy } from '../../hooks/useScrollSpy';
 import { useAuth } from '../../contexts/AuthContext';
+import { handleUpgradeToProWithUser, handleManageSubscription } from '../../lib/ctaHandlers';
+import { supabaseClient } from '../../config/supabase-config';
 import './Navbar.css';
 
 const SECTION_LINKS = [
@@ -27,7 +29,8 @@ function getUserDisplayName(user) {
 export function Navbar() {
   const activeId = useScrollSpy(SECTION_LINKS.map((l) => l.id));
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, loading, logout, signInWithGoogle, isSupabaseConfigured } = useAuth();
+  const location = useLocation();
+  const { user, loading, tier, subscriptionLoading, subscriptionError, refetchSubscription, logout, signInWithGoogle, isSupabaseConfigured } = useAuth();
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -43,6 +46,16 @@ export function Navbar() {
   const handleLogout = () => {
     closeMenu();
     logout();
+  };
+
+  // Pro users: open Stripe Billing Portal (manage subscription). Free users: open Checkout (upgrade).
+  const handleSubscriptionCta = () => {
+    closeMenu();
+    if (tier === 'pro') {
+      handleManageSubscription(supabaseClient, refetchSubscription);
+    } else {
+      handleUpgradeToProWithUser(supabaseClient);
+    }
   };
 
   return (
@@ -85,6 +98,23 @@ export function Navbar() {
             <div className="navbar__auth">
               {user ? (
                 <>
+                  {/* Plan label from profiles.tier; syncs with Supabase after login and when returning from Stripe. */}
+                  {subscriptionLoading ? (
+                    <span className="navbar__plan navbar__plan--loading" aria-hidden>…</span>
+                  ) : (
+                    <span className="navbar__plan" title={subscriptionError || undefined}>
+                      {subscriptionError ? 'Free Plan' : tier === 'pro' ? 'Pro Plan' : 'Free Plan'}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="navbar__btn navbar__btn--primary"
+                    onClick={handleSubscriptionCta}
+                    disabled={subscriptionLoading}
+                    aria-busy={subscriptionLoading}
+                  >
+                    {subscriptionLoading ? '…' : tier === 'pro' ? 'Manage Subscription' : 'Upgrade to Pro'}
+                  </button>
                   <span className="navbar__user" title={user.email}>
                     {getUserDisplayName(user)}
                   </span>

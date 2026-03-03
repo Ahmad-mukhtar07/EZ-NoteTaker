@@ -89,15 +89,61 @@ export async function handleUpgradeToProWithUser(supabaseClient) {
 }
 
 /**
+ * Calls the create-billing-portal-session Edge Function with the current Supabase session.
+ * The Edge Function loads the user's stripe_customer_id from public.subscriptions and
+ * creates a Stripe Billing Portal session; returns { url } to redirect the user to
+ * manage subscription (cancel, update payment, etc.).
+ */
+export async function createBillingPortalSession(supabaseClient) {
+  if (!supabaseClient) return { error: 'Supabase not configured' };
+  const { data: { session: refreshed } } = await supabaseClient.auth.refreshSession();
+  const session = refreshed ?? (await supabaseClient.auth.getSession()).data?.session;
+  if (!session?.access_token) return { error: 'Not logged in' };
+  const { data, error } = await supabaseClient.functions.invoke('create-billing-portal-session', {
+    method: 'POST',
+    body: {},
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+  if (!data?.url) return { error: 'No billing portal URL returned' };
+  return { url: data.url };
+}
+
+/**
+ * "Manage Subscription" for Pro users. Invokes create-billing-portal-session and
+ * redirects to Stripe's hosted billing portal. Call refetchSubscription after
+ * the user returns so the Navbar stays in sync.
+ */
+export async function handleManageSubscription(supabaseClient, refetchSubscription) {
+  const result = await createBillingPortalSession(supabaseClient);
+  if (result.error) {
+    if (typeof window !== 'undefined' && window.alert) {
+      window.alert(result.error);
+    }
+    return;
+  }
+  if (result.url && typeof window !== 'undefined') {
+    window.location.href = result.url;
+  }
+  if (typeof refetchSubscription === 'function') {
+    // Refetch when user comes back (handled by Layout on /success or /cancel; portal return_url is SITE_URL so refetch on next load).
+    refetchSubscription();
+  }
+}
+
+/**
  * Optional: run on page load to restore session or handle post-checkout.
- * e.g. ?checkout=success → show thank-you, sync subscription to Supabase/profile.
+ * When the user returns from Stripe (success or cancel), we refetch profile tier
+ * so the Navbar updates without a full reload. Layout calls refetchSubscription
+ * when pathname is /success or /cancel.
  */
 export function handleCheckoutReturn() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('checkout') === 'success') {
-    // TODO: Optionally fetch updated subscription from your backend and update UI
+    // Optionally show thank-you; tier refetch is triggered by Layout when on /success.
   }
   if (params.get('checkout') === 'cancelled') {
-    // TODO: Optionally show "checkout cancelled" message
+    // Optionally show "checkout cancelled" message
   }
 }

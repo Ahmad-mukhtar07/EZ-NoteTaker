@@ -11,3 +11,5 @@
 
 -- Optional: add indexes if they do not already exist (safe to run).
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON public.subscriptions(user_id);
+-- Required for webhook upsert by user_id (avoids duplicate-key 500 when multiple events fire together).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_user_id_unique ON public.subscriptions(user_id);

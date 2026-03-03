@@ -6,7 +6,7 @@ import { handleCheckoutReturn } from '../../lib/ctaHandlers';
 import './Layout.css';
 
 export function Layout() {
-  // Optional: handle Stripe success/cancel return — see lib/ctaHandlers.js handleCheckoutReturn
+  // Handle Stripe success/cancel return (query params on any page).
   useEffect(() => {
     handleCheckoutReturn();
   }, []);

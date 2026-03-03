@@ -206,6 +206,17 @@
   white-space: nowrap;
 }
 
+/* Plan label: "Free Plan" / "Pro Plan" from profiles.tier */
+.navbar__plan {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-muted);
+}
+
+.navbar__plan--loading {
+  color: var(--color-neutral-400);
+}
+
 @media (min-width: 1024px) {
   .navbar__user {
     max-width: 12rem;

@@ -40,6 +40,41 @@ export async function signInWithGoogle() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Subscription state: tier comes from public.profiles.tier (synced by stripe-webhook).
+  // We fetch it when user is set so the Navbar can show "Free Plan" / "Pro Plan" and the right CTA.
+  const [tier, setTier] = useState(null); // 'free' | 'pro' | null
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState(null);
+
+  // Fetch profile tier from Supabase for the current user. Keeps UI in sync with profiles.tier.
+  const refetchSubscription = useCallback(async () => {
+    if (!isSupabaseConfigured || !supabaseClient || !user?.id) {
+      setTier(null);
+      setSubscriptionError(null);
+      return;
+    }
+    setSubscriptionLoading(true);
+    setSubscriptionError(null);
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('tier')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (error) {
+        setSubscriptionError(error.message);
+        setTier(null);
+        return;
+      }
+      const t = (data?.tier ?? 'free').toLowerCase();
+      setTier(t === 'pro' ? 'pro' : 'free');
+    } catch (e) {
+      setSubscriptionError(e?.message ?? 'Failed to load plan');
+      setTier(null);
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabaseClient) {
@@ -74,15 +109,59 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // When user is set, fetch profile tier so Navbar can show plan and correct CTA.
+  useEffect(() => {
+    if (!user?.id) {
+      setTier(null);
+      setSubscriptionError(null);
+      setSubscriptionLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSubscriptionLoading(true);
+    setSubscriptionError(null);
+    supabaseClient
+      .from('profiles')
+      .select('tier')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          setSubscriptionError(error.message);
+          setTier(null);
+          return;
+        }
+        const t = (data?.tier ?? 'free').toLowerCase();
+        setTier(t === 'pro' ? 'pro' : 'free');
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setSubscriptionError(e?.message ?? 'Failed to load plan');
+          setTier(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSubscriptionLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
   const logout = useCallback(async () => {
     if (!isSupabaseConfigured || !supabaseClient) return;
     await supabaseClient.auth.signOut();
     setUser(null);
+    setTier(null);
+    setSubscriptionError(null);
   }, []);
 
   const value = {
     user,
     loading,
+    tier,
+    subscriptionLoading,
+    subscriptionError,
+    refetchSubscription,
     logout,
     signInWithGoogle,
     isSupabaseConfigured,
