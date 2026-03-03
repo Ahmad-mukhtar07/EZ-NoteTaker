@@ -11,16 +11,23 @@ export function PricingCard({
   features = [],
   ctaLabel,
   ctaHref,
+  onCtaClick,
   highlighted = false,
   className = '',
 }) {
+  const baseClass = `pricing-card__cta btn btn--md ${highlighted ? 'btn--primary' : 'btn--secondary'}`;
   const cta = ctaLabel && (
-    <a
-      href={ctaHref || '#'}
-      className={`pricing-card__cta btn btn--md ${highlighted ? 'btn--primary' : 'btn--secondary'}`}
-    >
-      {ctaLabel}
-    </a>
+    onCtaClick
+      ? (
+          <button type="button" className={baseClass} onClick={onCtaClick}>
+            {ctaLabel}
+          </button>
+        )
+      : (
+          <a href={ctaHref || '#'} className={baseClass}>
+            {ctaLabel}
+          </a>
+        )
   );
 
   return (

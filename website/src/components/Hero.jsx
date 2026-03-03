@@ -1,25 +1,64 @@
 import { Button } from './ui/Button';
 import { Container } from './ui/Container';
+import { hero, heroDemoSlot } from '../content/placeholders';
+import { handleGetChromeExtension, handleUpgradeToProWithUser } from '../lib/ctaHandlers';
+import { useAuth } from '../contexts/AuthContext';
+import { supabaseClient } from '../config/supabase-config';
 import './Hero.css';
 
 export function Hero() {
+  const { user, loading, signInWithGoogle, isSupabaseConfigured } = useAuth();
+  const showLoginCta = isSupabaseConfigured && !loading && !user;
+  const showUpgradeCta = isSupabaseConfigured && !loading && user;
+
   return (
-    <section className="hero" aria-labelledby="hero-heading">
+    <section id="hero" className="hero" aria-labelledby="hero-heading">
       <Container className="hero__container">
         <div className="hero__content">
           <h1 id="hero-heading" className="hero__headline">
-            Turn messy research into structured, source-backed Google Docs
+            {hero.headline}
           </h1>
           <p className="hero__support">
-            Capture text and image snippets from any webpage and insert them straight into Google Docs—with clean, trackable sources and optional Pro reference formatting. One extension. Less friction.
+            {hero.support}
           </p>
           <div className="hero__ctas">
-            <Button as="a" href="#" variant="primary" size="lg" className="hero__cta hero__cta--primary">
-              Get the Chrome Extension
+            {/* Primary CTA: replace handleGetChromeExtension with Stripe/auth flow when ready */}
+            <Button
+              type="button"
+              variant="primary"
+              size="lg"
+              className="hero__cta hero__cta--primary"
+              onClick={handleGetChromeExtension}
+            >
+              {hero.ctaPrimary}
             </Button>
             <Button as="a" href="#demo" variant="secondary" size="lg" className="hero__cta hero__cta--secondary">
-              See How It Works
+              {hero.ctaSecondary}
             </Button>
+            {showLoginCta && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="lg"
+                className="hero__cta hero__cta--login"
+                onClick={() => signInWithGoogle()}
+              >
+                Log in with Google
+              </Button>
+            )}
+            {/* Upgrade to Pro: only for logged-in users; Stripe Checkout will be triggered in handleUpgradeToProWithUser */}
+            {showUpgradeCta && (
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                className="hero__cta hero__cta--upgrade"
+                onClick={() => handleUpgradeToProWithUser(supabaseClient)}
+                aria-label="Upgrade to Pro subscription"
+              >
+                Upgrade to Pro
+              </Button>
+            )}
           </div>
         </div>
         <div className="hero__mockup-wrap">
@@ -32,8 +71,8 @@ export function Hero() {
             </div>
             <div className="hero__mockup-content">
               <img
-                src="https://picsum.photos/seed/docsourced-mockup/640/400"
-                alt="Product preview placeholder — replace with extension screenshot"
+                src={hero.mockupImageUrl}
+                alt={hero.mockupAlt}
                 className="hero__mockup-img"
                 width={640}
                 height={400}
@@ -44,24 +83,20 @@ export function Hero() {
         </div>
       </Container>
 
-      {/* Structured space for demo video or GIF — replace src/poster when you have final asset */}
-      <div id="demo" className="hero__demo-slot" aria-label="Product demo">
+      {/* Placeholder: replace with real video/GIF embed when ready */}
+      <div id="hero-demo" className="hero__demo-slot" aria-label="Product demo">
         <Container>
-          <h2 className="hero__demo-title">See it in action</h2>
+          <h2 className="hero__demo-title">{heroDemoSlot.title}</h2>
           <div className="hero__demo-inner">
-            <video
-              className="hero__demo-video"
-              controls
-              poster="https://picsum.photos/seed/docsourced-demo/1280/720"
-              preload="metadata"
-              aria-label="Product demo video"
-            >
-              <source
-                src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
-                type="video/mp4"
-              />
-              Your browser does not support the video tag.
-            </video>
+            <div className="hero__demo-placeholder">
+              <span className="hero__demo-play" aria-hidden>
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </span>
+              <span className="hero__demo-placeholder-label">{heroDemoSlot.placeholderLabel}</span>
+              <span className="hero__demo-placeholder-hint">{heroDemoSlot.placeholderHint}</span>
+            </div>
           </div>
         </Container>
       </div>

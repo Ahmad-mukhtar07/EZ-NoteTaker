@@ -1,0 +1,108 @@
+/* Pricing — Free vs Pro cards, responsive two-column */
+
+.pricing-section__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  text-align: center;
+  color: var(--color-text);
+}
+
+@media (min-width: 640px) {
+  .pricing-section__title {
+    font-size: var(--text-3xl);
+  }
+}
+
+.pricing-section__support {
+  margin: 0 0 var(--space-10);
+  font-size: var(--text-base);
+  text-align: center;
+  color: var(--color-text-muted);
+  max-width: 32rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 640px) {
+  .pricing-section__support {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-12);
+  }
+}
+
+.pricing-section__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-8);
+  max-width: 52rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .pricing-section__grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+    align-items: stretch;
+  }
+}
+
+.pricing-section__card-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Same-height badge row so both cards start at the same vertical position */
+.pricing-section__badge-row {
+  min-height: 2rem;
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+}
+
+.pricing-section__card-wrap:not(.pricing-section__card-wrap--pro) .pricing-section__badge-row {
+  visibility: hidden;
+  margin-bottom: var(--space-3);
+}
+
+/* Card fills remaining space and aligns height with sibling column */
+.pricing-section__card-wrap > .pricing-section__card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-section__card-wrap > .pricing-section__card .pricing-card__cta-wrap {
+  margin-top: auto;
+}
+
+.pricing-section__badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+.pricing-section__card-wrap--pro .pricing-section__card {
+  border-color: var(--color-accent-200);
+  box-shadow: 0 0 0 1px var(--color-accent-100), var(--shadow-md);
+}
+
+.pricing-section__card-wrap--pro .pricing-section__card:hover {
+  border-color: var(--color-accent-300);
+  box-shadow: 0 0 0 1px var(--color-accent-200), 0 8px 20px rgba(13, 148, 136, 0.12);
+}
+
+@media (min-width: 768px) {
+  .pricing-section__card-wrap--pro .pricing-section__card {
+    margin-top: 0;
+  }
+}

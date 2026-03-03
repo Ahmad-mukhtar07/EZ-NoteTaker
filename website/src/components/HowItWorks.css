@@ -1,0 +1,112 @@
+/* How It Works — horizontal steps on desktop, stacked cards on mobile */
+
+.how-it-works__lead {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--font-medium);
+  color: var(--color-accent-700);
+  text-align: center;
+}
+
+.how-it-works__title {
+  margin: 0 0 var(--space-10);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  text-align: center;
+  color: var(--color-text);
+}
+
+@media (min-width: 640px) {
+  .how-it-works__title {
+    font-size: var(--text-3xl);
+    margin-bottom: var(--space-12);
+  }
+}
+
+.how-it-works__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .how-it-works__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-8);
+  }
+}
+
+@media (min-width: 1024px) {
+  .how-it-works__grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+.how-it-works__card {
+  position: relative;
+  padding: var(--space-6);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.how-it-works__card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-neutral-300);
+}
+
+@media (min-width: 1024px) {
+  .how-it-works__card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.how-it-works__number {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border-radius: 50%;
+  line-height: 1;
+}
+
+.how-it-works__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: var(--space-4);
+  color: var(--color-accent);
+}
+
+.how-it-works__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.how-it-works__card-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+}
+
+.how-it-works__card-desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-muted);
+}

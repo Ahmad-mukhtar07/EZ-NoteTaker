@@ -1,0 +1,17 @@
+.card {
+  padding: var(--space-6);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card:focus-within {
+  border-color: var(--color-accent-200);
+  box-shadow: 0 0 0 1px var(--color-accent-100);
+}

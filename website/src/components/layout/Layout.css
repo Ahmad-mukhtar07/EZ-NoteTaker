@@ -1,3 +1,25 @@
+/* Skip link — visible on focus for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--space-4);
+  z-index: 1000;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: var(--space-4);
+  outline: 2px solid var(--color-accent-300);
+  outline-offset: 2px;
+}
+
 .layout__main {
   flex: 1;
   display: flex;

@@ -1,0 +1,27 @@
+/* Scroll-triggered entrance: fade-in + slide-up */
+
+.animated-section {
+  opacity: 0;
+  transform: translateY(1rem);
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out;
+}
+
+.animated-section--in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-section {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .animated-section--in-view {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -1,0 +1,2 @@
+/* Reuses checkout-result block; import shared success page styles */
+@import './CheckoutSuccessPage.css';
