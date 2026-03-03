@@ -50,11 +50,11 @@ function shouldDowngradeToFree(status: string): boolean {
 }
 
 // Build subscription row from Stripe subscription object (shared by several events).
-// stripe_customer_id is used by create-billing-portal-session to open Stripe's hosted billing portal.
+// id is used by create-billing-portal-session to open Stripe's hosted billing portal.
 function subscriptionPayload(
   userId: string,
   sub: Stripe.Subscription
-): { user_id: string; status: string; price_id: string | null; cancel_at_period_end: boolean; current_period_end: string | null; stripe_customer_id: string | null; created?: string } {
+): { user_id: string; status: string; price_id: string | null; cancel_at_period_end: boolean; current_period_end: string | null; id: string | null; created?: string } {
   const priceId = sub.items?.data?.[0]?.price?.id ?? null
   const currentPeriodEnd = sub.current_period_end
     ? new Date(sub.current_period_end * 1000).toISOString()
@@ -66,26 +66,29 @@ function subscriptionPayload(
     price_id: priceId,
     cancel_at_period_end: sub.cancel_at_period_end ?? false,
     current_period_end: currentPeriodEnd,
-    stripe_customer_id: customerId,
+    id: customerId,
   }
 }
 
 // Upsert subscriptions by user_id in a single DB call to avoid race conditions (e.g. checkout.session.completed and invoice.payment_succeeded firing together).
 // Requires a UNIQUE constraint on user_id (see migration). subscriptions.id is FK to profiles(id); we set id = user_id.
-// stripe_customer_id is stored for create-billing-portal-session (Stripe Billing Portal redirect).
+// id is stored for create-billing-portal-session (Stripe Billing Portal redirect).
+// We only set current_period_end when the payload has a value, so we never overwrite an existing date with null.
 async function upsertSubscription(
   supabase: ReturnType<typeof createClient>,
-  payload: { user_id: string; status: string; price_id: string | null; cancel_at_period_end: boolean; current_period_end: string | null; stripe_customer_id?: string | null; created?: string }
+  payload: { user_id: string; status: string; price_id: string | null; cancel_at_period_end: boolean; current_period_end: string | null; id?: string | null; created?: string }
 ): Promise<{ error: { message: string; details?: string; hint?: string } | null }> {
-  const row = {
+  const row: Record<string, unknown> = {
     id: payload.user_id,
     user_id: payload.user_id,
     status: payload.status,
     price_id: payload.price_id,
     cancel_at_period_end: payload.cancel_at_period_end,
-    current_period_end: payload.current_period_end,
-    stripe_customer_id: payload.stripe_customer_id ?? null,
+    id: payload.id ?? null,
     created: payload.created ?? new Date().toISOString(),
+  }
+  if (payload.current_period_end != null && payload.current_period_end !== '') {
+    row.current_period_end = payload.current_period_end
   }
   const { error } = await supabase
     .from(SUBSCRIPTIONS_TABLE)
@@ -246,15 +249,17 @@ Deno.serve(async (req) => {
       case 'customer.subscription.updated': {
         // Update existing subscriptions row by user_id (from subscription.metadata.user_id).
         // Synchronize status, price_id, cancel_at_period_end, current_period_end. Set profiles.tier by status.
-        const sub = event.data.object as Stripe.Subscription
-        const userId = sub.metadata?.user_id as string | undefined
+        // Retrieve full subscription from API so we always get current_period_end (event object can sometimes omit it).
+        const subFromEvent = event.data.object as Stripe.Subscription
+        const userId = subFromEvent.metadata?.user_id as string | undefined
         if (!userId) {
-          console.warn('customer.subscription.updated missing metadata.user_id', { eventId, subId: sub.id })
+          console.warn('customer.subscription.updated missing metadata.user_id', { eventId, subId: subFromEvent.id })
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
           })
         }
+        const sub = await stripe.subscriptions.retrieve(subFromEvent.id)
         const payload = subscriptionPayload(userId, sub)
         const { error: upsertErr } = await upsertSubscription(supabase, payload)
         if (upsertErr) {
@@ -277,14 +282,21 @@ Deno.serve(async (req) => {
 
       case 'customer.subscription.deleted': {
         // Set subscriptions.status = 'canceled' and profiles.tier = 'free'.
-        const sub = event.data.object as Stripe.Subscription
-        const userId = sub.metadata?.user_id as string | undefined
+        // Retrieve full subscription so we persist current_period_end for dashboard display.
+        const subFromEvent = event.data.object as Stripe.Subscription
+        const userId = subFromEvent.metadata?.user_id as string | undefined
         if (!userId) {
-          console.warn('customer.subscription.deleted missing metadata.user_id', { eventId, subId: sub.id })
+          console.warn('customer.subscription.deleted missing metadata.user_id', { eventId, subId: subFromEvent.id })
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
           })
+        }
+        let sub: Stripe.Subscription
+        try {
+          sub = await stripe.subscriptions.retrieve(subFromEvent.id)
+        } catch {
+          sub = subFromEvent
         }
         const payload = subscriptionPayload(userId, sub)
         payload.status = 'canceled'

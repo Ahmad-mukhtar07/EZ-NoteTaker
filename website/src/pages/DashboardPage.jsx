@@ -104,7 +104,8 @@ export function DashboardPage() {
   const d = subscriptionData;
   const displayTier = (d?.tier || tier || 'free').toLowerCase() === 'pro' ? 'Pro' : 'Free';
   const hasPro = displayTier === 'Pro';
-  const hasSubscription = d && (d.status != null || d.current_period_end != null);
+  // Show subscription block when we have any subscription data or user is Pro (e.g. canceled but still Pro until period end).
+  const hasSubscription = d && (hasPro || d.status != null || d.current_period_end != null || d.cancel_at_period_end === true);
   // Show cancellation warning when subscription is set to cancel at period end. After they
   // reverse cancellation in the Billing Portal, returning to the site triggers a fresh
   // fetch (dashboard mount or refetchSubscription), so the banner disappears without reload.
@@ -142,9 +143,16 @@ export function DashboardPage() {
             <div className="dashboard-page__cancellation-banner" role="status" aria-live="polite">
               <p className="dashboard-page__cancellation-title">Subscription set to cancel</p>
               <p className="dashboard-page__cancellation-text">
-                You will keep Pro access until <strong>{formatDate(d.current_period_end)}</strong>.
-                After that date, your plan will downgrade to Free. To keep Pro, open Manage Subscription
-                and reverse the cancellation before the period ends.
+                {d.current_period_end ? (
+                  <>
+                    You will keep Pro access until <strong>{formatDate(d.current_period_end)}</strong>.
+                    After that date, your plan will downgrade to Free.
+                  </>
+                ) : (
+                  'Your subscription will end at the close of the current billing period. Pro access will continue until then.'
+                )}
+                {' '}
+                To keep Pro, open Manage Subscription and reverse the cancellation before the period ends.
               </p>
             </div>
           )}

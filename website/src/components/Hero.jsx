@@ -1,23 +1,15 @@
 import { Button } from './ui/Button';
 import { Container } from './ui/Container';
+import { Link } from 'react-router-dom';
 import { hero, heroDemoSlot } from '../content/placeholders';
-import { handleGetChromeExtension, handleUpgradeToProWithUser, handleManageSubscription } from '../lib/ctaHandlers';
+import { handleGetChromeExtension } from '../lib/ctaHandlers';
 import { useAuth } from '../contexts/AuthContext';
-import { supabaseClient } from '../config/supabase-config';
 import './Hero.css';
 
 export function Hero() {
-  const { user, loading, tier, subscriptionLoading, refetchSubscription, signInWithGoogle, isSupabaseConfigured } = useAuth();
+  const { user, loading, signInWithGoogle, isSupabaseConfigured } = useAuth();
   const showLoginCta = isSupabaseConfigured && !loading && !user;
-  const showUpgradeCta = isSupabaseConfigured && !loading && user;
-
-  const handleSubscriptionCta = () => {
-    if (tier === 'pro') {
-      handleManageSubscription(supabaseClient, refetchSubscription);
-    } else {
-      handleUpgradeToProWithUser(supabaseClient);
-    }
-  };
+  const showDashboardCta = isSupabaseConfigured && !loading && user;
 
   return (
     <section id="hero" className="hero" aria-labelledby="hero-heading">
@@ -54,19 +46,17 @@ export function Hero() {
                 Log in with Google
               </Button>
             )}
-            {/* Upgrade / Manage: only for logged-in users; Pro → Billing Portal, Free → Checkout */}
-            {showUpgradeCta && (
+            {/* Dashboard: for logged-in users; manage subscription only through that page. */}
+            {showDashboardCta && (
               <Button
-                type="button"
+                as={Link}
+                to="/dashboard"
                 variant="primary"
                 size="lg"
                 className="hero__cta hero__cta--upgrade"
-                onClick={handleSubscriptionCta}
-                disabled={subscriptionLoading}
-                aria-busy={subscriptionLoading}
-                aria-label={tier === 'pro' ? 'Manage subscription' : 'Upgrade to Pro subscription'}
+                aria-label="Go to Dashboard"
               >
-                {subscriptionLoading ? '…' : tier === 'pro' ? 'Manage Subscription' : 'Upgrade to Pro'}
+                Dashboard
               </Button>
             )}
           </div>
