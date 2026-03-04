@@ -153,6 +153,45 @@
   color: var(--color-text);
 }
 
+/* Log in with Google: colored border + Google logo */
+.hero__cta-login-wrap {
+  display: inline-flex;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(66, 133, 244, 0.5);
+  background: rgba(66, 133, 244, 0.08);
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero__cta-login-wrap:hover {
+  border-color: rgba(66, 133, 244, 0.7);
+  background: rgba(66, 133, 244, 0.12);
+  box-shadow: 0 0 0 1px rgba(66, 133, 244, 0.2);
+}
+
+.hero__cta-login-wrap .hero__cta--login {
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+}
+
+.hero__cta-login-wrap:hover .hero__cta--login {
+  color: var(--color-text);
+}
+
+.hero__cta-login-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: var(--space-2);
+}
+
+.hero__cta-login-icon svg {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
 @media (min-width: 640px) {
   .hero__cta--primary,
   .hero__cta--upgrade {
