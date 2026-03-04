@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
   const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
-  const siteUrl = (Deno.env.get('SITE_URL') ?? '').replace(/\/$/, '')
+  const envSiteUrl = (Deno.env.get('SITE_URL') ?? '').replace(/\/$/, '')
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Missing SUPABASE_URL or SUPABASE_ANON_KEY')
@@ -44,8 +44,22 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
-  if (!stripeSecretKey || !siteUrl) {
-    console.error('Missing STRIPE_SECRET_KEY or SITE_URL')
+  if (!stripeSecretKey) {
+    console.error('Missing STRIPE_SECRET_KEY')
+    return new Response(
+      JSON.stringify({ error: 'Server configuration error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  let body = {}
+  try {
+    body = await req.json()
+  } catch (_) {}
+  const origin = typeof body?.site_url === 'string' && body.site_url.trim() ? body.site_url.trim().replace(/\/$/, '') : ''
+  const siteUrl = (origin && /^https?:\/\//i.test(origin) ? origin : null) || envSiteUrl
+  if (!siteUrl) {
+    console.error('Missing SITE_URL env and no site_url in request body')
     return new Response(
       JSON.stringify({ error: 'Server configuration error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

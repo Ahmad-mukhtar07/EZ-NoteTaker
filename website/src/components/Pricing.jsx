@@ -7,8 +7,9 @@ import { supabaseClient } from '../config/supabase-config';
 import './Pricing.css';
 
 export function Pricing() {
-  const { user, loading, signInWithGoogle, isSupabaseConfigured } = useAuth();
+  const { user, loading, tier, signInWithGoogle, isSupabaseConfigured } = useAuth();
   const canUpgrade = isSupabaseConfigured && !loading && user;
+  const isPro = tier === 'pro';
 
   return (
     <Section id="pricing" className="pricing-section">
@@ -43,7 +44,7 @@ export function Pricing() {
             <div className="pricing-section__badge-row">
               <span className="pricing-section__badge">Pro</span>
             </div>
-            {/* Pro CTA: when logged in → Upgrade to Pro (Stripe); when not → Log in to upgrade */}
+            {/* Pro CTA: if Pro → Dashboard; if logged in → Upgrade to Pro (Stripe); if not → Log in to upgrade */}
             <PricingCard
               name="Pro"
               price="$3.5"
@@ -58,8 +59,9 @@ export function Pricing() {
                 'Undo last insert',
                 'Full-quality image snips',
               ]}
-              ctaLabel={canUpgrade ? 'Upgrade to Pro' : 'Log in to upgrade'}
-              onCtaClick={canUpgrade ? () => handleUpgradeToProWithUser(supabaseClient) : () => signInWithGoogle()}
+              ctaLabel={isPro ? 'Dashboard' : canUpgrade ? 'Upgrade to Pro' : 'Log in to upgrade'}
+              ctaHref={isPro ? '/dashboard' : undefined}
+              onCtaClick={isPro ? undefined : (canUpgrade ? () => handleUpgradeToProWithUser(supabaseClient) : () => signInWithGoogle())}
               highlighted={true}
               className="pricing-section__card"
             />

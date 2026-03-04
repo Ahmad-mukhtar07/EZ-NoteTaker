@@ -50,7 +50,8 @@ export function handleUpgradeToPro() {
 /**
  * Calls the create-checkout-session Edge Function with the current Supabase session.
  * The Edge Function resolves the user from the JWT (same as profiles.id) and creates
- * a Stripe Checkout session; success_url and cancel_url point to /success and /cancel.
+ * a Stripe Checkout session; success_url and cancel_url use the site_url we send
+ * (current origin) so redirects work in both production and local dev.
  * Returns { url } or { error }.
  */
 export async function createCheckoutSession(supabaseClient) {
@@ -59,9 +60,10 @@ export async function createCheckoutSession(supabaseClient) {
   const { data: { session: refreshed } } = await supabaseClient.auth.refreshSession();
   const session = refreshed ?? (await supabaseClient.auth.getSession()).data?.session;
   if (!session?.access_token) return { error: 'Not logged in' };
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const { data, error } = await supabaseClient.functions.invoke('create-checkout-session', {
     method: 'POST',
-    body: {},
+    body: { site_url: siteUrl },
     headers: { Authorization: `Bearer ${session.access_token}` },
   });
   if (error) return { error: error.message };
@@ -90,18 +92,18 @@ export async function handleUpgradeToProWithUser(supabaseClient) {
 
 /**
  * Calls the create-billing-portal-session Edge Function with the current Supabase session.
- * The Edge Function loads the user's stripe_customer_id from public.subscriptions and
- * creates a Stripe Billing Portal session; returns { url } to redirect the user to
- * manage subscription (cancel, update payment, etc.).
+ * The Edge Function creates a Stripe Billing Portal session; return_url uses the site_url
+ * we send (current origin) so "Back to website" goes to the same domain (production or local).
  */
 export async function createBillingPortalSession(supabaseClient) {
   if (!supabaseClient) return { error: 'Supabase not configured' };
   const { data: { session: refreshed } } = await supabaseClient.auth.refreshSession();
   const session = refreshed ?? (await supabaseClient.auth.getSession()).data?.session;
   if (!session?.access_token) return { error: 'Not logged in' };
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const { data, error } = await supabaseClient.functions.invoke('create-billing-portal-session', {
     method: 'POST',
-    body: {},
+    body: { site_url: siteUrl },
     headers: { Authorization: `Bearer ${session.access_token}` },
   });
   if (error) return { error: error.message };

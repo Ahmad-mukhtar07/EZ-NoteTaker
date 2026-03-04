@@ -38,10 +38,24 @@ Deno.serve(async (req) => {
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
   const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
   const stripeProPriceId = Deno.env.get('STRIPE_PRO_PRICE_ID')
-  const siteUrl = Deno.env.get('SITE_URL')?.replace(/\/$/, '') || ''
+  const envSiteUrl = Deno.env.get('SITE_URL')?.replace(/\/$/, '') || ''
 
-  if (!stripeSecretKey || !stripeProPriceId || !siteUrl) {
-    console.error('Missing STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID, or SITE_URL')
+  if (!stripeSecretKey || !stripeProPriceId) {
+    console.error('Missing STRIPE_SECRET_KEY or STRIPE_PRO_PRICE_ID')
+    return new Response(
+      JSON.stringify({ error: 'Server configuration error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  let body = {}
+  try {
+    body = await req.json()
+  } catch (_) {}
+  const origin = typeof body?.site_url === 'string' && body.site_url.trim() ? body.site_url.trim().replace(/\/$/, '') : ''
+  const siteUrl = (origin && /^https?:\/\//i.test(origin) ? origin : null) || envSiteUrl
+  if (!siteUrl) {
+    console.error('Missing SITE_URL env and no site_url in request body')
     return new Response(
       JSON.stringify({ error: 'Server configuration error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

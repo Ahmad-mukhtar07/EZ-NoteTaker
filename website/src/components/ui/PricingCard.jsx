@@ -1,6 +1,7 @@
 /**
  * Pricing tier card: name, price, description, features list, CTA.
  */
+import { Link } from 'react-router-dom';
 import './PricingCard.css';
 
 export function PricingCard({
@@ -23,11 +24,17 @@ export function PricingCard({
             {ctaLabel}
           </button>
         )
-      : (
-          <a href={ctaHref || '#'} className={baseClass}>
-            {ctaLabel}
-          </a>
-        )
+      : ctaHref?.startsWith('/')
+        ? (
+            <Link to={ctaHref} className={baseClass}>
+              {ctaLabel}
+            </Link>
+          )
+        : (
+            <a href={ctaHref || '#'} className={baseClass}>
+              {ctaLabel}
+            </a>
+          )
   );
 
   return (
