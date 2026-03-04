@@ -2,7 +2,6 @@ import { AnimatedSection } from '../components/ui/AnimatedSection';
 import { Hero } from '../components/Hero';
 import { HowItWorks } from '../components/HowItWorks';
 import { Features } from '../components/Features';
-import { DemoSection } from '../components/DemoSection';
 import { Pricing } from '../components/Pricing';
 import { FAQ } from '../components/FAQ';
 import { CTASection } from '../components/CTASection';
@@ -17,9 +16,6 @@ export function HomePage() {
       </AnimatedSection>
       <AnimatedSection>
         <Features />
-      </AnimatedSection>
-      <AnimatedSection>
-        <DemoSection />
       </AnimatedSection>
       <AnimatedSection>
         <Pricing />

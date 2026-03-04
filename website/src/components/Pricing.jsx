@@ -46,7 +46,7 @@ export function Pricing() {
             {/* Pro CTA: when logged in → Upgrade to Pro (Stripe); when not → Log in to upgrade */}
             <PricingCard
               name="Pro"
-              price="$9"
+              price="$3.5"
               period="/month"
               description="Multi-document support, Format References (superscript citations + Sources section), Snip History, and higher usage limits for publication-ready docs."
               features={[

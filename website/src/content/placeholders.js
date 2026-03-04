@@ -15,11 +15,12 @@ export const hero = {
   ctaPrimary: 'Get the Chrome Extension',
   ctaSecondary: 'See How It Works',
   mockupAlt: 'DocSourced extension — capture and format research in Google Docs',
-  mockupImageUrl: 'https://picsum.photos/seed/docsourced-mockup/640/400',
+  mockupImageUrl: '../../public/DocSourced-coverpng.png',
 };
 
 export const heroDemoSlot = {
   title: 'See DocSourced in action',
+  youtubeVideoId: 'bezXrhutj6I',
   placeholderLabel: 'Demo video or GIF',
   placeholderHint: 'Watch how to capture snippets and plug them into your Google Doc with linked sources.',
 };

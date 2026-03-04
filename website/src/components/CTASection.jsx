@@ -41,7 +41,7 @@ export function CTASection() {
                 Upgrade to Pro
               </Button>
             )}
-            <a href="#demo" className="cta-section__link">
+            <a href="#hero-demo" className="cta-section__link">
               See how it works
             </a>
           </div>

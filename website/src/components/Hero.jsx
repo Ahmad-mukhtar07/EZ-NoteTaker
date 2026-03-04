@@ -32,7 +32,7 @@ export function Hero() {
             >
               {hero.ctaPrimary}
             </Button>
-            <Button as="a" href="#demo" variant="secondary" size="lg" className="hero__cta hero__cta--secondary">
+            <Button as="a" href="#hero-demo" variant="secondary" size="lg" className="hero__cta hero__cta--secondary">
               {hero.ctaSecondary}
             </Button>
             {showLoginCta && (
@@ -93,20 +93,30 @@ export function Hero() {
         </div>
       </Container>
 
-      {/* Placeholder: replace with real video/GIF embed when ready */}
+      {/* Hero demo: YouTube embed when youtubeVideoId is set, else placeholder */}
       <div id="hero-demo" className="hero__demo-slot" aria-label="Product demo">
         <Container>
           <h2 className="hero__demo-title">{heroDemoSlot.title}</h2>
           <div className="hero__demo-inner">
-            <div className="hero__demo-placeholder">
-              <span className="hero__demo-play" aria-hidden>
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </span>
-              <span className="hero__demo-placeholder-label">{heroDemoSlot.placeholderLabel}</span>
-              <span className="hero__demo-placeholder-hint">{heroDemoSlot.placeholderHint}</span>
-            </div>
+            {heroDemoSlot.youtubeVideoId ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${heroDemoSlot.youtubeVideoId}?rel=0`}
+                title={heroDemoSlot.title}
+                className="hero__demo-video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <div className="hero__demo-placeholder">
+                <span className="hero__demo-play" aria-hidden>
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+                <span className="hero__demo-placeholder-label">{heroDemoSlot.placeholderLabel}</span>
+                <span className="hero__demo-placeholder-hint">{heroDemoSlot.placeholderHint}</span>
+              </div>
+            )}
           </div>
         </Container>
       </div>

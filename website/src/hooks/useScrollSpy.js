@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const defaultIds = ['hero', 'how-it-works', 'features', 'demo', 'pricing', 'faq', 'cta', 'footer'];
+const defaultIds = ['hero', 'how-it-works', 'features', 'pricing', 'faq', 'cta', 'footer'];
 
 /**
  * Returns the id of the section currently in view (for nav highlight).

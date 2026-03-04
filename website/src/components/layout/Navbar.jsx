@@ -8,7 +8,6 @@ import './Navbar.css';
 const SECTION_LINKS = [
   { id: 'how-it-works', label: 'How It Works' },
   { id: 'features', label: 'Features' },
-  { id: 'demo', label: 'Demo' },
   { id: 'pricing', label: 'Pricing' },
   { id: 'faq', label: 'FAQ' },
 ];
