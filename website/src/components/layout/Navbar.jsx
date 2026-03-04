@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useScrollSpy } from '../../hooks/useScrollSpy';
 import { useAuth } from '../../contexts/AuthContext';
 import { productName } from '../../content/placeholders';
@@ -27,6 +27,7 @@ export function Navbar() {
   const activeId = useScrollSpy(SECTION_LINKS.map((l) => l.id));
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, loading, tier, subscriptionLoading, subscriptionError, logout, signInWithGoogle, isSupabaseConfigured } = useAuth();
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -42,6 +43,9 @@ export function Navbar() {
 
   const handleLogout = () => {
     closeMenu();
+    if (location.pathname === '/dashboard') {
+      navigate('/', { replace: true });
+    }
     logout();
   };
 
