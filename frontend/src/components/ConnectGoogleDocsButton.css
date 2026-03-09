@@ -2,6 +2,26 @@
   margin: 0.75rem 0;
 }
 
+.connect-google-docs__intro {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #94a3b8;
+}
+
+.connect-google-docs__cta-wrap {
+  margin-bottom: 0.5rem;
+}
+
+.connect-google-docs__cta-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .connect-google-docs__btn {
   width: 100%;
   padding: 0.6rem 1rem;
@@ -53,11 +73,91 @@
   color: #94a3b8;
 }
 
+.connect-google-docs__about {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.connect-google-docs__about-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.connect-google-docs__about-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #94a3b8;
+}
+
+.connect-google-docs__about-list li {
+  margin-bottom: 0.4rem;
+}
+
+.connect-google-docs__about-list li:last-child {
+  margin-bottom: 0;
+}
+
+.connect-google-docs__about-list strong {
+  color: #cbd5e1;
+}
+
+.connect-google-docs__steps {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.connect-google-docs__steps-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: #94a3b8;
+}
+
+.connect-google-docs__steps-list li {
+  margin-bottom: 0.35rem;
+}
+
+.connect-google-docs__steps-list li:last-child {
+  margin-bottom: 0;
+}
+
+.connect-google-docs__steps-list strong {
+  color: #cbd5e1;
+}
+
 @media (prefers-color-scheme: light) {
   .connect-google-docs__btn {
     background: #1a73e8;
   }
   .connect-google-docs__btn:hover:not(:disabled) {
     background: #1557b0;
+  }
+  .connect-google-docs__about-title {
+    color: rgba(0, 0, 0, 0.9);
+  }
+  .connect-google-docs__about-list {
+    color: rgba(0, 0, 0, 0.65);
+  }
+  .connect-google-docs__about-list strong {
+    color: rgba(0, 0, 0, 0.85);
+  }
+  .connect-google-docs__about {
+    border-top-color: rgba(0, 0, 0, 0.12);
+  }
+  .connect-google-docs__intro {
+    color: rgba(0, 0, 0, 0.65);
+  }
+  .connect-google-docs__cta-label {
+    color: rgba(0, 0, 0, 0.75);
+  }
+  .connect-google-docs__steps {
+    border-top-color: rgba(0, 0, 0, 0.12);
   }
 }
