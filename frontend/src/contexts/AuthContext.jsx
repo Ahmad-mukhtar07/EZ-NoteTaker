@@ -132,6 +132,7 @@ export function AuthProvider({ children }) {
           persistTierToStorage('free');
           if (chrome?.storage?.local) chrome.storage.local.remove('eznote_supabase_access_token');
           if (chrome?.storage?.local) chrome.storage.local.remove('eznote_pro_tier');
+          if (chrome?.runtime?.sendMessage) chrome.runtime.sendMessage({ type: 'AUTH_DISCONNECT' }, () => {});
         } else {
           loadProfile(nextUser.id).catch(() => {});
           setAccessValidationLoading(true);
@@ -187,6 +188,10 @@ export function AuthProvider({ children }) {
     if (chrome?.storage?.local) {
       chrome.storage.local.remove('eznote_supabase_access_token');
       chrome.storage.local.remove('eznote_pro_tier');
+    }
+    // Clear Google Docs state so the next user doesn't get 403 (wrong token/folder).
+    if (chrome?.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: 'AUTH_DISCONNECT' }, () => {});
     }
   }, []);
 

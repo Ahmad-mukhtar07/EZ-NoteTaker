@@ -16,6 +16,7 @@ const SNIP_OVERLAY_PATH = 'snipOverlay.js';
 const SNIP_INSERT_INDEX_KEY = 'eznote_snip_insert_index';
 const SNIP_INSERT_SUCCESS_KEY = 'eznote_snip_insert_success';
 const SNIP_INSERT_ERROR_KEY = 'eznote_snip_insert_error';
+const SNIP_INSERTING_KEY = 'eznote_snip_inserting';
 const OFFSCREEN_DOCUMENT_PATH = 'offscreen.html';
 const sessionStorage = chrome.storage?.session || chrome.storage?.local;
 
@@ -79,6 +80,13 @@ async function notifyAndRemoveOverlay(tabId, title, message, isError = false) {
   } catch (_) {}
 }
 
+function clearSnipFlowState() {
+  if (sessionStorage) sessionStorage.remove(SNIP_INSERTING_KEY);
+  try {
+    chrome.runtime.sendMessage({ type: 'SNIP_FLOW_DONE' });
+  } catch (_) {}
+}
+
 function userFriendlyInsertError(message) {
   if (typeof message !== 'string') return 'Could not add image to document.';
   if (message.includes('Unable to download all specified images')) {
@@ -101,6 +109,7 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
     dataUrl = await chrome.tabs.captureVisibleTab(windowId ?? undefined, { format: 'png' });
   } catch (err) {
     await notifyAndRemoveOverlay(tabId, 'Capture failed', err?.message || 'Could not capture the tab. Try again.', true);
+    clearSnipFlowState();
     return;
   }
 
@@ -109,15 +118,18 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
     cropResult = await chrome.tabs.sendMessage(tabId, { type: 'CROP_IMAGE', dataUrl, bounds });
   } catch (err) {
     await notifyAndRemoveOverlay(tabId, 'Snip failed', 'Could not process selection. Try again.', true);
+    clearSnipFlowState();
     return;
   }
 
   if (cropResult?.type === 'SNIP_ERROR') {
     await notifyAndRemoveOverlay(tabId, 'Snip failed', cropResult.error || 'Crop failed.', true);
+    clearSnipFlowState();
     return;
   }
   if (cropResult?.type !== 'CROPPED_IMAGE' || !cropResult.base64) {
     await notifyAndRemoveOverlay(tabId, 'Snip failed', 'No image data received.', true);
+    clearSnipFlowState();
     return;
   }
 
@@ -207,6 +219,7 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
       } catch (_) {}
     } catch (err) {
       await notifyAndRemoveOverlay(tabId, 'Copy failed', err?.message || 'Could not copy to clipboard.', true);
+      clearSnipFlowState();
       return;
     }
     try {
@@ -217,12 +230,14 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
       'Image Snip',
       'Image copied to clipboard. Paste anywhere.' + (pageTitleForNotify ? ` Source: ${pageTitleForNotify}` : '')
     );
+    clearSnipFlowState();
     return;
   }
 
   const documentId = await getSelectedDocumentId();
   if (!documentId) {
     await notifyAndRemoveOverlay(tabId, 'No document selected', 'Open DocSourced and select a Google Doc to connect.', true);
+    clearSnipFlowState();
     return;
   }
 
@@ -249,14 +264,17 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
     });
     if (usage.error === 'snip_limit_reached') {
       await notifyAndRemoveOverlay(tabId, 'Snip limit reached', 'You\'ve reached your monthly limit. Upgrade to add more.', true);
+      clearSnipFlowState();
       return;
     }
     if (usage.error === 'not_authenticated') {
       await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open the extension and sign in to your account to use Image Snip.', true);
+      clearSnipFlowState();
       return;
     }
     if (usage.error) {
       await notifyAndRemoveOverlay(tabId, 'Image Snip failed', usage.error, true);
+      clearSnipFlowState();
       return;
     }
     const snipId = usage.snip_id ?? null;
@@ -278,6 +296,7 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
       await sessionStorage.set({ [SNIP_INSERT_SUCCESS_KEY]: true });
     }
     showNotification('Image Snip', 'Screenshot added at cursor in your open doc.');
+    clearSnipFlowState();
     return;
   }
 
@@ -317,10 +336,12 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
         });
         if (usage.error === 'snip_limit_reached') {
           await notifyAndRemoveOverlay(tabId, 'Snip limit reached', 'You\'ve reached your monthly limit. Upgrade to add more.', true);
+          clearSnipFlowState();
           throw new Error('SNIP_LIMIT_REACHED');
         }
         if (usage.error === 'not_authenticated') {
           await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open the extension and sign in to your account to use Image Snip.', true);
+          clearSnipFlowState();
           throw new Error('NOT_AUTHENTICATED');
         }
         if (usage.error) {
@@ -340,14 +361,20 @@ export async function handleSnipBounds(tabId, bounds, windowId = null, pageInfo 
       await sessionStorage.set({ [SNIP_INSERT_SUCCESS_KEY]: true });
     }
     showNotification('Image Snip', 'Screenshot was added to your Google Doc.');
+    clearSnipFlowState();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg === 'SNIP_LIMIT_REACHED' || msg === 'NOT_AUTHENTICATED') return; // already notified above
+    if (msg === 'SNIP_LIMIT_REACHED' || msg === 'NOT_AUTHENTICATED') {
+      clearSnipFlowState();
+      return;
+    }
     if (msg.includes('Sign in required')) {
       await notifyAndRemoveOverlay(tabId, 'Sign in required', 'Open DocSourced and click "Connect Google Docs" to sign in.', true);
+      clearSnipFlowState();
       return;
     }
     await notifyAndRemoveOverlay(tabId, 'Image Snip failed', userFriendlyInsertError(msg), true);
+    clearSnipFlowState();
   }
 }
 

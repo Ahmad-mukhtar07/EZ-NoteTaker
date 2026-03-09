@@ -139,7 +139,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     setSnipOverlayActive(false);
     clearSnipInsertIndex();
     const st = chrome.storage?.session || chrome.storage?.local;
-    if (st) st.set({ eznote_snip_cancelled: true });
+    if (st) {
+      st.remove('eznote_snip_inserting');
+      st.set({ eznote_snip_cancelled: true });
+    }
+    try {
+      chrome.runtime.sendMessage({ type: 'SNIP_FLOW_DONE' });
+    } catch (_) {}
     sendResponse({ ok: true });
     return true;
   }

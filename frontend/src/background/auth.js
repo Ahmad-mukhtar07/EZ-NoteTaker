@@ -10,7 +10,7 @@ import {
   clearStoredAccessToken,
   clearAllCachedAuthTokens,
 } from '../lib/auth.js';
-import { clearSelectedDocument } from '../lib/storage.js';
+import { clearSelectedDocument, clearResearchSnipsFolderId } from '../lib/storage.js';
 import { log } from './logger.js';
 import { showNotification } from './notifications.js';
 
@@ -176,6 +176,7 @@ export async function clearAuthState() {
     // Chrome < 87
   }
   await clearSelectedDocument();
+  await clearResearchSnipsFolderId();
   log.bg.info('Auth state cleared');
 }
 

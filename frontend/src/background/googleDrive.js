@@ -31,6 +31,8 @@ async function setPublicViewPermission(fileId, accessToken) {
     const body = await res.text();
     throw new Error(`Drive permission error: ${res.status} ${body.slice(0, 150)}`);
   }
+  // Allow Drive to propagate "anyone with link" before Docs fetches the image
+  await new Promise((r) => setTimeout(r, 800));
 }
 
 /**
@@ -131,17 +133,9 @@ export async function uploadImageToDrive(accessToken, imageBlob, filename = 'ezn
 
   await setPublicViewPermission(fileId, accessToken);
 
-  let imageUrl = data.webContentLink;
-  if (!imageUrl) {
-    const getRes = await fetch(`${FILES_URL}/${fileId}?fields=webContentLink`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (getRes.ok) {
-      const fileMeta = await getRes.json();
-      imageUrl = fileMeta.webContentLink;
-    }
-  }
-  if (!imageUrl) imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+  // Use a direct URL that serves raw image bytes for unauthenticated requests (Docs API fetches server-side).
+  // drive.usercontent.google.com with confirm=t avoids redirects for small files.
+  const imageUrl = `https://drive.usercontent.google.com/download?export=download&confirm=t&id=${fileId}`;
   return { fileId, imageUrl };
 }
 

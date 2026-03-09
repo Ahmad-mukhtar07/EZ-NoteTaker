@@ -82,3 +82,13 @@ export function setResearchSnipsFolderId(folderId) {
   if (!storage) return Promise.resolve();
   return storage.set({ [STORAGE_KEYS.RESEARCH_SNIPS_FOLDER_ID]: folderId });
 }
+
+/**
+ * Clear the Research Snips folder ID (e.g. when switching Google accounts).
+ * @returns {Promise<void>}
+ */
+export function clearResearchSnipsFolderId() {
+  const storage = getStorage();
+  if (!storage) return Promise.resolve();
+  return storage.remove([STORAGE_KEYS.RESEARCH_SNIPS_FOLDER_ID]);
+}

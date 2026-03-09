@@ -112,6 +112,13 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
         setSnipCopySuccess(true);
         setTimeout(() => setSnipCopySuccess(false), 2500);
       }
+      if (msg?.type === 'SNIP_FLOW_DONE') {
+        setSnipStep(null);
+        setSnipSections([]);
+        setSnipError(null);
+        const storage = chrome.storage?.session || chrome.storage?.local;
+        if (storage) storage.remove(SNIP_INSERTING_KEY);
+      }
     };
     chrome.runtime.onMessage.addListener(listener);
     return () => chrome.runtime.onMessage.removeListener(listener);
@@ -210,7 +217,7 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
     };
   }, []);
 
-  // On popup open: if snip just succeeded (e.g. user had popup closed), show success once. Restore inserting state so spinner shows until success/error. Clear inserting when cancelled.
+  // On popup open: if snip just succeeded (e.g. user had popup closed), show success once. Restore inserting state so spinner shows until success/error. Clear inserting when cancelled. If overlay is gone but inserting key still set, treat as stale and clear.
   useEffect(() => {
     const storage = chrome.storage?.session || chrome.storage?.local;
     if (!storage?.get) return;
@@ -233,7 +240,12 @@ export function ConnectedDocument({ documentId, documentName, onChangeDocument, 
         storage.remove(SNIP_INSERTING_KEY);
         storage.remove('eznote_snip_cancelled');
       }
-      if (result?.[SNIP_INSERTING_KEY] === true && result?.[SNIP_SUCCESS_KEY] !== true && !result?.[SNIP_ERROR_KEY] && !result?.['eznote_snip_cancelled']) {
+      const overlayActive = result?.['eznote_snip_overlay_active'] === true;
+      const insertingKeySet = result?.[SNIP_INSERTING_KEY] === true;
+      if (insertingKeySet && !overlayActive && result?.[SNIP_SUCCESS_KEY] !== true && !result?.[SNIP_ERROR_KEY] && !result?.['eznote_snip_cancelled']) {
+        setSnipStep(null);
+        storage.remove(SNIP_INSERTING_KEY);
+      } else if (insertingKeySet && result?.[SNIP_SUCCESS_KEY] !== true && !result?.[SNIP_ERROR_KEY] && !result?.['eznote_snip_cancelled']) {
         setSnipStep('inserting');
       }
     });
